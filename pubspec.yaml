@@ -63,7 +63,13 @@ flutter:
 
   assets:
     - assets/images/
+    - assets/images/splash/
     - assets/icons/
+
+  fonts:
+    - family: Pretendard Variable
+      fonts:
+        - asset: assets/fonts/PretendardVariable.ttf
 
   # To add assets to your application, add an assets section, like this:
   # assets:
