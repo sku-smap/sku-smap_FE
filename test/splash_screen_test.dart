@@ -24,7 +24,7 @@ Widget _host({
 }
 
 void main() {
-  testWidgets('기본 스플래시는 부제를 보여주고 2.2초 뒤 끝난다', (tester) async {
+  testWidgets('기본 스플래시는 부제를 보여주고 3.0초 뒤 끝난다', (tester) async {
     var done = 0;
     await tester.pumpWidget(_host(onDone: () => done++));
 
@@ -33,13 +33,13 @@ void main() {
     expect(find.text('서경대 캠퍼스 길찾기'), findsOneWidget);
     expect(find.text('NFC 태그'), findsNothing);
 
-    await tester.pump(const Duration(milliseconds: 2100));
+    await tester.pump(const Duration(milliseconds: 2900));
     expect(done, 0);
     await tester.pump(const Duration(milliseconds: 150));
     expect(done, 1);
   });
 
-  testWidgets('NFC 스플래시는 출발 안내를 보여주고 2.8초 뒤 끝난다', (tester) async {
+  testWidgets('NFC 스플래시는 출발 안내를 보여주고 3.6초 뒤 끝난다', (tester) async {
     var done = 0;
     await tester.pumpWidget(_host(nfcPlace: '버스정류장', onDone: () => done++));
 
@@ -47,9 +47,9 @@ void main() {
     expect(find.text('지금 계신 버스정류장에서\n시작할게요'), findsOneWidget);
     expect(find.text('서경대 캠퍼스 길찾기'), findsNothing);
 
-    await tester.pump(const Duration(milliseconds: 2300));
+    await tester.pump(const Duration(milliseconds: 3500));
     expect(done, 0);
-    await tester.pump(const Duration(milliseconds: 550));
+    await tester.pump(const Duration(milliseconds: 150));
     expect(done, 1);
   });
 

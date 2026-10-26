@@ -69,8 +69,8 @@ abstract final class SplashTextStyles {
 }
 
 abstract final class SplashTiming {
-  static const defaultTotal = 2200;
-  static const nfcTotal = 2800;
+  static const defaultTotal = 3000;
+  static const nfcTotal = 3600;
   static const reducedTotal = 1000;
   static const exit = 350;
 
