@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 import 'widgets/placeholder_page.dart';
 
 abstract final class AppRoutes {
-  static const splash = '/splash';
   static const home = '/';
   static const search = '/search';
   static const navigation = '/navigation';
@@ -17,10 +16,6 @@ final routerProvider = Provider<GoRouter>((ref) {
   final router = GoRouter(
     initialLocation: AppRoutes.home,
     routes: [
-      GoRoute(
-        path: AppRoutes.splash,
-        builder: (context, state) => const PlaceholderPage(title: '스플래시'),
-      ),
       GoRoute(
         path: AppRoutes.home,
         builder: (context, state) => const PlaceholderPage(title: '홈'),
