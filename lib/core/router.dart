@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../features/home/presentation/screens/home_screen.dart';
 import 'widgets/placeholder_page.dart';
 
 abstract final class AppRoutes {
@@ -18,7 +19,7 @@ final routerProvider = Provider<GoRouter>((ref) {
     routes: [
       GoRoute(
         path: AppRoutes.home,
-        builder: (context, state) => const PlaceholderPage(title: '홈'),
+        builder: (context, state) => const HomeScreen(),
       ),
       GoRoute(
         path: AppRoutes.search,
