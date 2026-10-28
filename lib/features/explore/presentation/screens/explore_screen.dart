@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/widgets/app_toast.dart';
 import '../../../campus/data/campus_directory.dart';
 import '../../../campus/state/launch_provider.dart';
+import '../../../campus/state/node_providers.dart';
 import '../../../campus/state/trip_controller.dart';
 import '../../../navigation/presentation/navigation_routes.dart';
 import '../../../navigation/presentation/navigation_tokens.dart';
@@ -27,22 +28,21 @@ class ExploreScreen extends ConsumerStatefulWidget {
 }
 
 class _ExploreScreenState extends ConsumerState<ExploreScreen> {
-  late final ExploreEntry _entry;
+  ExploreEntry? _entry;
 
-  // ?building=&floor= from the building sheet, ?edit=1 for the team's fix mode
   @override
-  void initState() {
-    super.initState();
-    _entry = exploreEntryFor(
+  Widget build(BuildContext context) {
+    // Choose the entry spot once the server spot list is merged in
+    if (ref.watch(nodeCatalogProvider).isLoading) {
+      return const Scaffold(backgroundColor: NavColors.photoBg);
+    }
+    // ?building=&floor= from the building sheet, ?edit=1 for the fix mode
+    final entry = _entry ??= exploreEntryFor(
       widget.query,
       ref.read(tripProvider).from,
       edit: widget.query['edit'] == '1' || ref.read(launchEntryProvider).edit,
     );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final provider = exploreProvider(_entry);
+    final provider = exploreProvider(entry);
     final state = ref.watch(provider);
     final controller = ref.read(provider.notifier);
     final here = spotById[state.node]!;
@@ -74,8 +74,8 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
         },
         onBack: () => NavigationRoutes.exit(context),
         onToggleMap: controller.toggleMap,
-        onPhotoTap: _entry.edit ? controller.fixDirection : null,
-        editPanel: _entry.edit
+        onPhotoTap: entry.edit ? controller.fixDirection : null,
+        editPanel: entry.edit
             ? EditPanel(
                 links: [
                   for (final l in viewLinks(here.id, null, overrides))

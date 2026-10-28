@@ -1,6 +1,5 @@
 import '../../campus/data/campus_directory.dart';
 import '../../campus/data/campus_models.dart';
-import '../../campus/data/mock/pano_spots_mock.dart';
 import '../../campus/data/mock/search_places_mock.dart';
 import 'search_models.dart';
 import 'search_tasks_mock.dart';
@@ -83,7 +82,7 @@ List<SearchPlace> searchPlacesFor(String q, {int limit = 8}) {
 List<PanoSpot> searchSpots(String q, {int limit = 5}) {
   final k = norm(q);
   if (k.isEmpty) return const [];
-  return panoSpots
+  return spotById.values
       .where((n) => !n.hidden && norm(n.title).contains(k))
       .take(limit)
       .toList();
