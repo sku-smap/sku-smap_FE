@@ -4,6 +4,7 @@ import '../data/campus_directory.dart';
 import '../data/campus_models.dart';
 import 'campus_status_providers.dart';
 import 'launch_provider.dart';
+import 'place_providers.dart';
 
 // Start, destination and route options shared by every screen
 class TripState {
@@ -48,6 +49,14 @@ class TripController extends Notifier<TripState> {
       if (wet != null && !_indoorTouched) {
         state = state.copyWith(indoor: wet);
       }
+    });
+    // Link ids only the server knows resolve once the place list arrives
+    ref.listen(placeCatalogProvider, (_, next) {
+      if (!next.hasValue) return;
+      state = state.copyWith(
+        from: () => state.from ?? resolvePlace(launch.from),
+        to: () => state.to ?? resolvePlace(launch.to),
+      );
     });
     return TripState(
       from: resolvePlace(launch.from),
