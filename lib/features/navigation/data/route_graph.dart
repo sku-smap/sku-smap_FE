@@ -1,5 +1,7 @@
 import 'dart:math' as math;
 
+import 'package:flutter/foundation.dart';
+
 import '../../campus/data/campus_directory.dart';
 import '../../campus/data/campus_models.dart';
 import '../../campus/data/mock/campus_floors_mock.dart';
@@ -7,6 +9,25 @@ import '../../campus/data/mock/route_graph_mock.dart';
 import 'navigation_models.dart';
 
 bool _hidden(String id) => spotById[id]?.hidden ?? false;
+
+Map<String, List<RouteLink>> _bundledLinks() => {
+  for (final MapEntry(:key, :value) in routeLinks.entries) key: [...value],
+};
+
+// Bundled links plus campus map edges the app did not have
+final _links = _bundledLinks();
+
+void registerLinks(Iterable<(String from, RouteLink link)> links) {
+  for (final (from, link) in links) {
+    final out = _links.putIfAbsent(from, () => []);
+    if (!out.any((l) => l.to == link.to)) out.add(link);
+  }
+}
+
+@visibleForTesting
+void resetLinks() => _links
+  ..clear()
+  ..addAll(_bundledLinks());
 
 // A shared place id or a 360 spot id into a route end
 RouteEnd? routeEndFor(String? id) {
@@ -31,7 +52,7 @@ List<RouteLink> linksOf(String id) {
   final out = <RouteLink>[];
   final seen = {id};
   void walk(String from, [String? through, Via? via]) {
-    for (final l in routeLinks[from] ?? const <RouteLink>[]) {
+    for (final l in _links[from] ?? const <RouteLink>[]) {
       if (!seen.add(l.to)) continue;
       if (_hidden(l.to)) {
         walk(l.to, through ?? l.to, via ?? l.via);
@@ -168,6 +189,16 @@ String linkYawKey(String from, String to) {
   return '$from>${through ?? to}';
 }
 
+// A measured or team-fixed photo direction exists for this link
+bool hasKnownYaw(
+  String from,
+  String to, [
+  Map<String, double> overrides = const {},
+]) {
+  final key = linkYawKey(from, to);
+  return overrides.containsKey(key) || linkYaw.containsKey(key);
+}
+
 // Arrow direction in the photo (degrees, 0 = photo center)
 double linkYawOf(
   String from,
@@ -178,7 +209,7 @@ double linkYawOf(
   if (through != null) return linkYawOf(from, through, overrides);
   final known = overrides['$from>$to'] ?? linkYaw['$from>$to'];
   if (known != null) return known;
-  final raw = routeLinks[from] ?? const <RouteLink>[];
+  final raw = _links[from] ?? const <RouteLink>[];
   final i = raw.indexWhere((l) => l.to == to);
   return _spread[(i < 0 ? 0 : i) % _spread.length];
 }

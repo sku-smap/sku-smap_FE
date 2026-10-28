@@ -17,6 +17,7 @@ class RouteLink {
     required this.via,
     this.note,
     this.through,
+    this.fromServer = false,
   });
 
   final String to;
@@ -24,8 +25,16 @@ class RouteLink {
   final String? note;
   final String? through;
 
-  RouteLink copyWith({required Via via, required String through}) =>
-      RouteLink(to: to, via: via, note: note, through: through);
+  // Added from the campus map; no photo direction is known for it
+  final bool fromServer;
+
+  RouteLink copyWith({required Via via, required String through}) => RouteLink(
+    to: to,
+    via: via,
+    note: note,
+    through: through,
+    fromServer: fromServer,
+  );
 }
 
 class FloorStop {

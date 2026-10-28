@@ -167,6 +167,7 @@ class PanoSpot {
     this.center = false,
     this.estimated = false,
     this.roomList,
+    this.imageUrl,
   });
 
   final String id;
@@ -181,6 +182,7 @@ class PanoSpot {
   final bool center;
   final bool estimated;
   final bool? roomList;
+  final String? imageUrl;
 
   bool get outdoor => building == 'outdoor';
 
@@ -189,7 +191,23 @@ class PanoSpot {
 
   CampusPlace get spot => CampusPlace(id: id, name: title);
 
-  // Server name, building and floor over the bundled map data for this id
+  PanoSpot withPhoto(String? url) => PanoSpot(
+    id: id,
+    title: title,
+    building: building,
+    floor: floor,
+    x: x,
+    y: y,
+    level: level,
+    flat: flat,
+    hidden: hidden,
+    center: center,
+    estimated: estimated,
+    roomList: roomList,
+    imageUrl: url,
+  );
+
+  // Server name, building, floor and photo over the bundled map data
   PanoSpot withServer(PanoSpot server) => PanoSpot(
     id: id,
     title: server.title,
@@ -203,5 +221,6 @@ class PanoSpot {
     center: center,
     estimated: estimated,
     roomList: roomList,
+    imageUrl: server.imageUrl ?? imageUrl,
   );
 }

@@ -3,15 +3,23 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:panorama_viewer/panorama_viewer.dart';
+import 'package:smap/core/network/app_exception.dart';
 import 'package:smap/core/router.dart';
 import 'package:smap/features/campus/data/campus_directory.dart';
+import 'package:smap/features/campus/data/campus_map.dart';
+import 'package:smap/features/campus/data/campus_map_repository.dart';
 import 'package:smap/features/campus/data/campus_models.dart';
+import 'package:smap/features/campus/data/mock/pano_spots_mock.dart';
 import 'package:smap/features/campus/state/launch_provider.dart';
+import 'package:smap/features/campus/state/node_providers.dart';
 import 'package:smap/features/campus/state/trip_controller.dart';
 import 'package:smap/features/explore/presentation/screens/explore_screen.dart';
+import 'package:smap/features/navigation/data/navigation_models.dart';
+import 'package:smap/features/navigation/data/route_graph.dart';
 import 'package:smap/features/navigation/state/navigation_controller.dart';
 
 final _pixel = MemoryImage(
@@ -47,6 +55,7 @@ Future<ProviderContainer> _pump(
   String initial, {
   Map<String, String> launch = const {},
   ImageProvider Function(String url)? photo,
+  List<Override> overrides = const [],
 }) async {
   tester.view.physicalSize = const Size(390, 844);
   tester.view.devicePixelRatio = 1;
@@ -57,6 +66,7 @@ Future<ProviderContainer> _pump(
       routerProvider.overrideWithValue(router),
       launchQueryProvider.overrideWithValue(launch),
       photoImageProvider.overrideWithValue(photo ?? (_) => _pixel),
+      ...overrides,
     ],
   );
   addTearDown(container.dispose);
@@ -269,4 +279,70 @@ void main() {
     expect(error, findsNothing);
     await _settleToast(tester);
   });
+
+  testWidgets('방향을 모르는 서버 연결은 사진 아래 칩으로 이동한다', (tester) async {
+    addTearDown(() {
+      resetSpots();
+      resetLinks();
+    });
+    const server = PanoSpot(
+      id: 'EJ1_02_E',
+      title: '은주1관 2층 동쪽',
+      building: 'eunju1',
+      floor: '2층',
+    );
+    await _pump(
+      tester,
+      '/explore',
+      overrides: [
+        campusMapRepositoryProvider.overrideWithValue(
+          _Map(
+            CampusMap(
+              spots: [spotById['gate_front']!, server],
+              links: const [
+                (
+                  'gate_front',
+                  RouteLink(to: 'EJ1_02_E', via: Via.walk, fromServer: true),
+                ),
+              ],
+              places: const [],
+            ),
+          ),
+        ),
+      ],
+    );
+    await _settleToast(tester);
+
+    await _tap(tester, find.text('은주1관 2층 동쪽'));
+    expect(find.text('은주1관 2층 동쪽'), findsNWidgets(2));
+    await _settleToast(tester);
+  });
+
+  testWidgets('지도 데이터를 못 받으면 눌러서 다시 받는다', (tester) async {
+    final map = _Map(null);
+    await _pump(
+      tester,
+      '/explore',
+      overrides: [campusMapRepositoryProvider.overrideWithValue(map)],
+    );
+
+    final retry = find.text('인터넷 연결을 확인해 주세요. 눌러서 다시 시도해 주세요.');
+    expect(retry, findsOneWidget);
+    map.result = const CampusMap(spots: panoSpots, links: [], places: []);
+    await tester.tap(retry);
+    await tester.pump();
+    await tester.pump();
+    await tester.pump();
+    expect(find.text('여기서 출발'), findsOneWidget);
+    await _settleToast(tester);
+  });
+}
+
+class _Map implements CampusMapRepository {
+  _Map(this.result);
+
+  CampusMap? result;
+
+  @override
+  Future<CampusMap> load() async => result ?? (throw const NetworkException());
 }

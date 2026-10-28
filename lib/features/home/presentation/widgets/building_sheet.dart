@@ -11,12 +11,14 @@ class BuildingSheet extends StatelessWidget {
   const BuildingSheet({
     super.key,
     required this.building,
+    required this.places,
     required this.onExplore,
     required this.onSetFrom,
     required this.onSetTo,
   });
 
   final CampusBuilding building;
+  final List<CampusPlace> places;
   final void Function({String? floor}) onExplore;
   final ValueChanged<CampusPlace> onSetFrom;
   final ValueChanged<CampusPlace> onSetTo;
@@ -62,12 +64,9 @@ class BuildingSheet extends StatelessWidget {
             ),
           ),
         ],
-        if (b.places.isNotEmpty) ...[
+        if (places.isNotEmpty) ...[
           const SizedBox(height: 16),
-          SheetPlaceChips(
-            places: b.places,
-            onTap: (p) => then(() => onSetTo(p)),
-          ),
+          SheetPlaceChips(places: places, onTap: (p) => then(() => onSetTo(p))),
         ],
         if (b.roomCount > 0) ...[
           const SizedBox(height: 5.75),

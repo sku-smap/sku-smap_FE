@@ -4,11 +4,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/widgets/app_toast.dart';
 import '../../../campus/data/campus_directory.dart';
 import '../../../campus/data/campus_models.dart';
+import '../../../campus/state/node_providers.dart';
 import '../../../campus/state/trip_controller.dart';
 import '../../state/link_yaw_controller.dart';
 import '../../state/navigation_controller.dart';
 import '../navigation_routes.dart';
 import '../navigation_tokens.dart';
+import '../widgets/map_data_notice.dart';
 import '../widgets/route_overview.dart';
 import '../widgets/step_card.dart';
 import '../widgets/viewer_stage.dart';
@@ -51,8 +53,8 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> {
     final node = state.node;
     final here = node == null ? null : spotById[node];
 
-    if (state.loading) {
-      return const Scaffold(backgroundColor: NavColors.photoBg);
+    if (state.loading || !ref.watch(nodeCatalogProvider).hasValue) {
+      return const MapDataNotice();
     }
 
     if (here == null) {

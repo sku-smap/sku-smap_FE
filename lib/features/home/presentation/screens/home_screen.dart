@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../campus/data/campus_models.dart';
 import '../../../campus/state/campus_status_providers.dart';
+import '../../../campus/state/place_providers.dart';
 import '../../../campus/state/trip_controller.dart';
 import '../../../report/presentation/widgets/applied_notice.dart';
 import '../../state/home_controller.dart';
@@ -20,6 +21,17 @@ import '../widgets/route_card.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
+
+  // Hide sheet places the server list no longer has, once it has loaded
+  static List<CampusPlace> _knownPlaces(WidgetRef ref, CampusBuilding b) {
+    final server = ref.read(placeCatalogProvider).value;
+    if (server == null) return b.places;
+    final ids = {for (final p in server) p.id};
+    return [
+      for (final p in b.places)
+        if (ids.contains(p.id)) p,
+    ];
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -52,6 +64,7 @@ class HomeScreen extends ConsumerWidget {
         context,
         child: BuildingSheet(
           building: building,
+          places: _knownPlaces(ref, building),
           onExplore: ({floor}) =>
               HomeRoutes.explore(context, building: building.id, floor: floor),
           onSetFrom: chooseFrom,

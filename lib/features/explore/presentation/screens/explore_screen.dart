@@ -11,6 +11,7 @@ import '../../../campus/state/node_providers.dart';
 import '../../../campus/state/trip_controller.dart';
 import '../../../navigation/presentation/navigation_routes.dart';
 import '../../../navigation/presentation/navigation_tokens.dart';
+import '../../../navigation/presentation/widgets/map_data_notice.dart';
 import '../../../navigation/presentation/widgets/viewer_stage.dart';
 import '../../../navigation/state/link_yaw_controller.dart';
 import '../../state/explore_controller.dart';
@@ -32,10 +33,8 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Choose the entry spot once the server spot list is merged in
-    if (ref.watch(nodeCatalogProvider).isLoading) {
-      return const Scaffold(backgroundColor: NavColors.photoBg);
-    }
+    // Choose the entry spot once the campus map is merged in
+    if (!ref.watch(nodeCatalogProvider).hasValue) return const MapDataNotice();
     // ?building=&floor= from the building sheet, ?edit=1 for the fix mode
     final entry = _entry ??= exploreEntryFor(
       widget.query,

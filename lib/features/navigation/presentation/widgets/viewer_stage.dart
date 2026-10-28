@@ -43,6 +43,7 @@ List<ViewLink> viewLinks(
               ? '${l.via.label} → $floor'
               : l.via.label,
           primary: to == next,
+          chip: l.fromServer && !hasKnownYaw(node, l.to, yawOverrides),
         );
       }(),
   ];

@@ -1,8 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:smap/core/router.dart';
+import 'package:smap/features/campus/data/campus_models.dart';
+import 'package:smap/features/campus/data/mock/search_places_mock.dart';
+import 'package:smap/features/campus/data/place_repository.dart';
+import 'package:smap/features/campus/state/place_providers.dart';
 import 'package:smap/features/home/presentation/screens/home_screen.dart';
 
 GoRouter _router(String initial) {
@@ -22,14 +27,18 @@ GoRouter _router(String initial) {
   );
 }
 
-Future<void> _pumpHome(WidgetTester tester, [String initial = '/']) async {
+Future<void> _pumpHome(
+  WidgetTester tester, [
+  String initial = '/',
+  List<Override> overrides = const [],
+]) async {
   tester.view.physicalSize = const Size(390, 844);
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.reset);
   final router = _router(initial);
   await tester.pumpWidget(
     ProviderScope(
-      overrides: [routerProvider.overrideWithValue(router)],
+      overrides: [routerProvider.overrideWithValue(router), ...overrides],
       child: MaterialApp.router(routerConfig: router),
     ),
   );
@@ -189,4 +198,32 @@ void main() {
       expect(_pushed(tester), path);
     });
   }
+
+  testWidgets('건물 시트는 서버 장소 목록에 없는 장소 칩을 숨긴다', (tester) async {
+    await _pumpHome(tester, '/', [
+      placeRepositoryProvider.overrideWithValue(
+        _Places([
+          for (final p in searchPlaces)
+            if (p.id != 'r-bonkwan-301') p,
+        ]),
+      ),
+    ]);
+
+    await _tap(tester, find.text('본관').last);
+    expect(find.text('군사학과'), findsOneWidget);
+    expect(find.text('총장실 (301호)'), findsNothing);
+    expect(find.text('부총장실 (303호)'), findsOneWidget);
+  });
+}
+
+class _Places implements PlaceRepository {
+  const _Places(this.places);
+
+  final List<SearchPlace> places;
+
+  @override
+  Future<List<SearchPlace>> all() async => places;
+
+  @override
+  Future<List<SearchPlace>> search(String keyword) async => places;
 }
