@@ -2,6 +2,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../../../core/network/app_config.dart';
+import '../../../core/network/data_source.dart';
 import '../../campus/state/launch_provider.dart';
 import '../data/mock_report_repository.dart';
 import '../data/report_models.dart';
@@ -10,8 +12,12 @@ import '../data/report_storage.dart';
 
 // Mock server: ?reports=demo acts connected, otherwise reports stay on device
 final reportRepositoryProvider = Provider<ReportRepository>(
-  (ref) =>
-      MockReportRepository(online: ref.watch(launchEntryProvider).demoReports),
+  (ref) => selectDataSource(
+    ref.watch(appConfigProvider),
+    mock: () => MockReportRepository(
+      online: ref.watch(launchEntryProvider).demoReports,
+    ),
+  ),
 );
 
 final reportStorageProvider = Provider<ReportStorage>(
