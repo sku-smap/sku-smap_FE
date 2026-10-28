@@ -3,7 +3,6 @@ import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../../campus/data/campus_directory.dart';
 import '../../../campus/data/campus_models.dart';
-import '../../../campus/data/mock/campus_floors_mock.dart';
 import '../../../home/data/home_assets.dart';
 import '../../data/navigation_models.dart';
 import '../../data/route_graph.dart';
@@ -37,7 +36,7 @@ class MiniMap extends StatelessWidget {
           if (showMap) _Stage(here: here, route: route),
           if (floor != null)
             _FloorLink(
-              building: buildingNames[here.building] ?? '',
+              building: buildingNameOf(here.building),
               floor: floor,
               rooms: roomsOn(here.building, floor).length,
               divided: showMap,
@@ -58,7 +57,10 @@ class _Stage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final r = route;
-    final pts = [for (final id in r?.path ?? const <String>[]) ?spotById[id]];
+    final pts = [
+      for (final id in r?.path ?? const <String>[])
+        if (spotById[id] case final n? when n.onMap) n,
+    ];
     final target = r == null ? null : spotById[r.to.node];
     final ground = here.level == MapLevel.ground;
     return AspectRatio(
@@ -69,8 +71,10 @@ class _Stage extends StatelessWidget {
           color: NavColors.mapStage,
           child: LayoutBuilder(
             builder: (context, size) {
-              Offset at(PanoSpot n) =>
-                  Offset(n.x / 100 * size.maxWidth, n.y / 100 * size.maxHeight);
+              Offset at(PanoSpot n) => Offset(
+                n.x! / 100 * size.maxWidth,
+                n.y! / 100 * size.maxHeight,
+              );
               return Stack(
                 clipBehavior: Clip.none,
                 children: [
@@ -87,24 +91,16 @@ class _Stage extends StatelessWidget {
                       ),
                     ),
                   if (pts.isNotEmpty) _Dot(at: at(pts.first), radius: 6),
-                  if (target != null) _Dot(at: at(target), radius: 3, size: 12),
-                  _Dot(at: at(here), radius: 8, size: 16),
+                  if (target != null && target.onMap)
+                    _Dot(at: at(target), radius: 3, size: 12),
+                  if (here.onMap)
+                    _Dot(at: at(here), radius: 8, size: 16)
+                  else
+                    const Center(child: _Chip('지도 위치 준비 중')),
                   Positioned(
                     left: 6,
                     top: 6,
-                    child: Container(
-                      height: 17,
-                      padding: const EdgeInsets.symmetric(horizontal: 6),
-                      alignment: Alignment.center,
-                      decoration: BoxDecoration(
-                        color: NavColors.navy,
-                        borderRadius: BorderRadius.circular(5),
-                      ),
-                      child: Text(
-                        ground ? '지상' : '지하',
-                        style: NavText.mapLevel,
-                      ),
-                    ),
+                    child: _Chip(ground ? '지상' : '지하'),
                   ),
                 ],
               );
@@ -112,6 +108,26 @@ class _Stage extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _Chip extends StatelessWidget {
+  const _Chip(this.text);
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 17,
+      padding: const EdgeInsets.symmetric(horizontal: 6),
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: NavColors.navy,
+        borderRadius: BorderRadius.circular(5),
+      ),
+      child: Text(text, style: NavText.mapLevel),
     );
   }
 }

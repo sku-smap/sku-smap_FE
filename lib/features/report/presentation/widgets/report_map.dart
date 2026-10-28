@@ -31,7 +31,7 @@ class ReportMap extends StatelessWidget {
           onLevel: onLevel,
           onPick: (n) => onPick((node: n.id, label: n.title)),
         ),
-        if (spot != null && spot.level == level)
+        if (spot != null && spot.onMap && spot.level == level)
           Positioned.fill(
             child: IgnorePointer(
               child: LayoutBuilder(
@@ -39,9 +39,10 @@ class ReportMap extends StatelessWidget {
                   children: [
                     Positioned(
                       left:
-                          size.maxWidth * spot.x / 100 - ReportLayout.meDot / 2,
+                          size.maxWidth * spot.x! / 100 -
+                          ReportLayout.meDot / 2,
                       top:
-                          size.maxHeight * spot.y / 100 -
+                          size.maxHeight * spot.y! / 100 -
                           ReportLayout.meDot / 2,
                       child: Container(
                         width: ReportLayout.meDot,

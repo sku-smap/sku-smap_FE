@@ -10,7 +10,12 @@ typedef ExploreEntry = ({String node, String? intro, bool edit});
 
 const exploreGate = 'gate_front';
 
-// Map tab opens at the chosen start (or the gate); building sheet opens there
+const noLinksNotice = '이 지점은 아직 이동 연결이 없어요';
+
+String? _known(String? node) => spotById.containsKey(node) ? node : null;
+
+// Map tab opens at the chosen start (or the gate); building sheet opens there;
+// ids the spot list does not know fall back to the gate
 ExploreEntry exploreEntryFor(
   Map<String, String> query,
   CampusPlace? from, {
@@ -19,12 +24,14 @@ ExploreEntry exploreEntryFor(
   final building = query['building'];
   if (building != null) {
     final floor = query['floor'];
-    final node = floor == null
-        ? nodeOf('b-$building')
-        : floorsOf(building).where((f) => f.label == floor).firstOrNull?.node;
+    final node = _known(
+      floor == null
+          ? nodeOf('b-$building')
+          : floorsOf(building).where((f) => f.label == floor).firstOrNull?.node,
+    );
     return (node: node ?? exploreGate, intro: null, edit: edit);
   }
-  final start = nodeOf(from?.id);
+  final start = _known(nodeOf(from?.id));
   if (from == null || start == null) {
     return (
       node: exploreGate,
@@ -76,10 +83,11 @@ class ExploreController extends Notifier<ExploreState>
   @override
   ExploreState build() {
     bindToast();
-    if (entry.intro != null) scheduleToastHide();
+    final intro = _linkNotice(entry.node) ?? entry.intro;
+    if (intro != null) scheduleToastHide();
     return ExploreState(
       node: entry.node,
-      toast: entry.intro,
+      toast: intro,
       editLink: _firstLink(entry.node),
     );
   }
@@ -91,8 +99,16 @@ class ExploreController extends Notifier<ExploreState>
   String? _firstLink(String node) =>
       entry.edit ? linksOf(node).firstOrNull?.to : null;
 
-  void goTo(String node) =>
-      state = state.copyWith(node: node, editLink: () => _firstLink(node));
+  // Spots only the server knows have no arrows until links are provided
+  String? _linkNotice(String node) =>
+      linksOf(node).isEmpty ? noLinksNotice : null;
+
+  void goTo(String node) {
+    if (!spotById.containsKey(node)) return;
+    state = state.copyWith(node: node, editLink: () => _firstLink(node));
+    final notice = _linkNotice(node);
+    if (notice != null) toast(notice);
+  }
 
   void toggleMap() => state = state.copyWith(showMap: !state.showMap);
 

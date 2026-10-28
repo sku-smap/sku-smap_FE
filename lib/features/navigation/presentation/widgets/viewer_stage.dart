@@ -100,7 +100,7 @@ class ViewerStage extends StatelessWidget {
       showHomeSheet(
         context,
         child: FloorSheet(
-          building: buildingNames[here.building] ?? '',
+          building: buildingNameOf(here.building),
           floor: floor,
           rooms: rooms,
         ),
@@ -174,7 +174,7 @@ class ViewerStage extends StatelessWidget {
                 ),
               ),
               child: FloorBar(
-                building: buildingNames[here.building] ?? '',
+                building: buildingNameOf(here.building),
                 current: here.floor,
                 floors: floors,
                 onFloor: onNavigate,

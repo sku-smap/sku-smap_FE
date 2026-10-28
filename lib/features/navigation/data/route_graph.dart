@@ -133,7 +133,7 @@ bool usesStairs(List<String> path) =>
         .any((l) => l?.via == Via.stairs);
 
 String placeLabel(PanoSpot n) =>
-    [if (!n.outdoor) ?buildingNames[n.building], ?n.floor].join(' · ');
+    [if (!n.outdoor) buildingNameOf(n.building), ?n.floor].join(' · ');
 
 // Guidance sentence for one leg (a → b)
 String instruction(String a, String b) {
@@ -209,7 +209,10 @@ RouteStats routeStats(List<String> path) {
       extraSec += _stairsSec;
       continue;
     }
-    final d = math.sqrt(math.pow(b.x - a.x, 2) + math.pow(b.y - a.y, 2));
+    final (ax, ay, bx, by) = (a.x, a.y, b.x, b.y);
+    final d = ax == null || ay == null || bx == null || by == null
+        ? 0.0
+        : math.sqrt(math.pow(bx - ax, 2) + math.pow(by - ay, 2));
     meters += math.max(d * _metersPerPct, _minStepM);
   }
   final minutes = math.max(1, ((meters / _walkSpeed + extraSec) / 60).round());
