@@ -7,6 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:panorama_viewer/panorama_viewer.dart';
 import 'package:smap/core/router.dart';
+import 'package:smap/features/campus/data/campus_directory.dart';
 import 'package:smap/features/campus/data/campus_models.dart';
 import 'package:smap/features/campus/state/launch_provider.dart';
 import 'package:smap/features/campus/state/trip_controller.dart';
@@ -45,6 +46,7 @@ Future<ProviderContainer> _pump(
   WidgetTester tester,
   String initial, {
   Map<String, String> launch = const {},
+  ImageProvider Function(String url)? photo,
 }) async {
   tester.view.physicalSize = const Size(390, 844);
   tester.view.devicePixelRatio = 1;
@@ -54,7 +56,7 @@ Future<ProviderContainer> _pump(
     overrides: [
       routerProvider.overrideWithValue(router),
       launchQueryProvider.overrideWithValue(launch),
-      photoImageProvider.overrideWithValue((_) => _pixel),
+      photoImageProvider.overrideWithValue(photo ?? (_) => _pixel),
     ],
   );
   addTearDown(container.dispose);
@@ -64,6 +66,7 @@ Future<ProviderContainer> _pump(
       child: MaterialApp.router(routerConfig: router),
     ),
   );
+  await tester.pump();
   await tester.pump();
   return container;
 }
@@ -216,6 +219,54 @@ void main() {
     // The arrow passes a hidden photo, so the fix is keyed to that link
     expect(copied.single, '{"gate_front>parking_3way":270.0}');
     expect(find.text('보정값 1개를 복사했어요'), findsOneWidget);
+    await _settleToast(tester);
+  });
+
+  testWidgets('없는 건물·층으로 열면 정문에서 연다', (tester) async {
+    await _pump(tester, '/explore?building=nope&floor=99');
+
+    expect(find.text('정문 앞'), findsNWidgets(2));
+    await _settleToast(tester);
+  });
+
+  testWidgets('서버에만 있는 지점은 지도 위치 준비 중과 연결 없음 안내를 보여준다', (tester) async {
+    addTearDown(resetSpots);
+    registerSpots(const [
+      PanoSpot(
+        id: 'EJ1_02_E',
+        title: '은주1관 2층 동쪽',
+        building: 'eunju1',
+        floor: '2층',
+      ),
+    ]);
+    await _pump(tester, '/explore', launch: {'from': 'EJ1_02_E'});
+
+    expect(find.text('은주1관 2층 동쪽'), findsNWidgets(2));
+    expect(find.text('지도 위치 준비 중'), findsOneWidget);
+    expect(find.text('이 지점은 아직 이동 연결이 없어요'), findsOneWidget);
+    await _settleToast(tester);
+
+    await _tap(tester, find.bySemanticsLabel('미니맵'));
+    await _tap(tester, find.text('여기서 출발'));
+    expect(find.text('page /search?pick=to'), findsOneWidget);
+  });
+
+  testWidgets('사진을 못 불러오면 다시 시도할 수 있다', (tester) async {
+    var broken = true;
+    final bad = MemoryImage(Uint8List.fromList([0, 1, 2, 3]));
+    await _pump(tester, '/explore', photo: (_) => broken ? bad : _pixel);
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 50)),
+    );
+    await tester.pump();
+
+    final error = find.text('사진을 불러오지 못했어요 · 다시 시도');
+    expect(error, findsOneWidget);
+    broken = false;
+    await tester.tap(error);
+    await tester.pump();
+    await tester.pump();
+    expect(error, findsNothing);
     await _settleToast(tester);
   });
 }
