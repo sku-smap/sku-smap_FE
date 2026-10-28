@@ -4,8 +4,9 @@ import 'package:go_router/go_router.dart';
 import '../features/explore/presentation/screens/explore_screen.dart';
 import '../features/home/presentation/screens/home_screen.dart';
 import '../features/navigation/presentation/screens/navigation_screen.dart';
+import '../features/report/presentation/screens/my_reports_screen.dart';
+import '../features/report/presentation/screens/report_screen.dart';
 import '../features/search/presentation/screens/search_screen.dart';
-import 'widgets/placeholder_page.dart';
 
 abstract final class AppRoutes {
   static const home = '/';
@@ -41,11 +42,11 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: AppRoutes.report,
-        builder: (context, state) => const PlaceholderPage(title: '제보'),
+        pageBuilder: (context, state) => ReportScreen.page(state),
       ),
       GoRoute(
         path: AppRoutes.myReports,
-        builder: (context, state) => const PlaceholderPage(title: '내 제보 현황'),
+        builder: (context, state) => const MyReportsScreen(),
       ),
     ],
   );
