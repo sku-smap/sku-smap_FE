@@ -5,21 +5,6 @@ import '../../campus/data/mock/search_places_mock.dart';
 import 'search_models.dart';
 import 'search_tasks_mock.dart';
 
-const _popularIds = [
-  'f-bus',
-  'b-bonkwan',
-  'b-yudam',
-  'f-cafeteria',
-  'f-gate',
-  'b-bukak',
-  'f-parking1',
-  'b-hyein',
-];
-
-final popularPlaces = searchPlaces
-    .where((p) => _popularIds.contains(p.id))
-    .toList();
-
 final _punct = RegExp(r'[\s·().,!?~]');
 
 String norm(String s) => s.toLowerCase().replaceAll(_punct, '');

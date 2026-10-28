@@ -5,6 +5,7 @@ import '../../../core/state/toast_host.dart';
 import '../../campus/data/campus_directory.dart';
 import '../../campus/data/campus_models.dart';
 import '../../campus/state/campus_status_providers.dart';
+import '../../campus/state/place_providers.dart';
 import '../data/guide_voice.dart';
 import '../data/navigation_models.dart';
 import '../data/route_graph.dart';
@@ -86,10 +87,11 @@ class NavigationController extends Notifier<NavigationState>
     bindToast();
     final voice = ref.read(guideVoiceProvider);
     ref.onDispose(voice.stop);
-    // Route once closures and weather are known so blocked spots are avoided
+    // Route once places, closures and weather are known
+    final places = ref.watch(placeCatalogProvider);
     final closures = ref.watch(campusClosuresProvider);
     final weather = ref.watch(campusWeatherProvider);
-    if (closures.isLoading || weather.isLoading) {
+    if (places.isLoading || closures.isLoading || weather.isLoading) {
       return const NavigationState(loading: true);
     }
     _blocked = {for (final c in closures.value ?? const <Closure>[]) c.node};

@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/network/error_mapper.dart';
 import '../../../campus/data/campus_models.dart';
+import '../../../campus/state/place_providers.dart';
 import '../../data/location_service.dart';
 import '../../data/place_search.dart';
 import '../../data/search_models.dart';
+import '../../state/place_search_controller.dart';
 import '../../state/search_flow_controller.dart';
 import '../search_tokens.dart';
 import 'pick_map.dart';
@@ -33,6 +36,7 @@ class PlacePicker extends ConsumerStatefulWidget {
 
 class _PlacePickerState extends ConsumerState<PlacePicker> {
   final _query = TextEditingController();
+  final _searchKey = Object();
   var _finding = false;
   LocateError? _locateError;
   var _mapOpen = false;
@@ -43,7 +47,10 @@ class _PlacePickerState extends ConsumerState<PlacePicker> {
   @override
   void initState() {
     super.initState();
-    _query.addListener(() => setState(() {}));
+    _query.addListener(() {
+      setState(() {});
+      ref.read(placeSearchProvider(_searchKey).notifier).setQuery(_query.text);
+    });
   }
 
   @override
@@ -72,8 +79,9 @@ class _PlacePickerState extends ConsumerState<PlacePicker> {
 
   @override
   Widget build(BuildContext context) {
-    final q = _query.text;
-    final results = searchPlacesFor(q, limit: 12);
+    final q = _query.text.trim();
+    final search = ref.watch(placeSearchProvider(_searchKey));
+    final results = search.results;
     final spots = _isFrom ? searchSpots(q, limit: 6) : const <PanoSpot>[];
     final bottom = MediaQuery.paddingOf(context).bottom;
 
@@ -103,8 +111,17 @@ class _PlacePickerState extends ConsumerState<PlacePicker> {
               if (q.isEmpty && _isFrom) ..._hereOptions(),
               if (q.isEmpty) ...[
                 const _Caption('자주 찾는 곳'),
-                for (final p in popularPlaces) _placeRow(p),
+                ..._popularRows(),
               ] else ...[
+                if (search.status == PlaceSearchStatus.loading)
+                  const _Status('찾는 중…'),
+                if (search.status == PlaceSearchStatus.failed)
+                  _ErrorBox(
+                    message: '${search.error} 눌러서 다시 시도해 주세요.',
+                    onRetry: ref
+                        .read(placeSearchProvider(_searchKey).notifier)
+                        .retry,
+                  ),
                 for (final p in results) _placeRow(p),
                 for (final n in spots)
                   _Inset(
@@ -115,13 +132,28 @@ class _PlacePickerState extends ConsumerState<PlacePicker> {
                       onTap: () => widget.onPick(n.spot),
                     ),
                   ),
-                if (results.isEmpty && spots.isEmpty) _Empty(query: q),
+                if (search.noResults && spots.isEmpty) _Empty(query: q),
               ],
             ],
           ),
         ),
       ],
     );
+  }
+
+  // Start list from the full place list, with its own loading and retry
+  List<Widget> _popularRows() {
+    final popular = ref.watch(popularPlacesProvider);
+    return switch (popular) {
+      AsyncData(:final value) => [for (final p in value) _placeRow(p)],
+      AsyncError(:final error) => [
+        _ErrorBox(
+          message: '${toAppException(error).message} 눌러서 다시 시도해 주세요.',
+          onRetry: () => ref.invalidate(placeCatalogProvider),
+        ),
+      ],
+      _ => [const _Status('불러오는 중…')],
+    };
   }
 
   Widget _placeRow(SearchPlace p) => _Inset(
@@ -146,7 +178,7 @@ class _PlacePickerState extends ConsumerState<PlacePicker> {
           onTap: _finding ? null : _findMe,
         ),
       ),
-      if (error != null) _LocateErrorBox(message: error.message),
+      if (error != null) _ErrorBox(message: error.message),
       _Inset(
         child: ResultRow(
           icon: ResultIcon.pin,
@@ -197,24 +229,43 @@ class _Caption extends StatelessWidget {
   }
 }
 
-class _LocateErrorBox extends StatelessWidget {
-  const _LocateErrorBox({required this.message});
+class _ErrorBox extends StatelessWidget {
+  const _ErrorBox({required this.message, this.onRetry});
 
   final String message;
+  final VoidCallback? onRetry;
 
   @override
   Widget build(BuildContext context) {
     return Semantics(
       liveRegion: true,
-      child: Container(
-        margin: const EdgeInsets.fromLTRB(16, 9, 16, 0),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        decoration: BoxDecoration(
-          color: SearchColors.errorBg,
-          borderRadius: BorderRadius.circular(SearchLayout.rowRadius),
+      button: onRetry != null,
+      child: GestureDetector(
+        onTap: onRetry,
+        child: Container(
+          margin: const EdgeInsets.fromLTRB(16, 9, 16, 0),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          decoration: BoxDecoration(
+            color: SearchColors.errorBg,
+            borderRadius: BorderRadius.circular(SearchLayout.rowRadius),
+          ),
+          child: Text(message, style: SearchText.error),
         ),
-        child: Text(message, style: SearchText.error),
       ),
+    );
+  }
+}
+
+class _Status extends StatelessWidget {
+  const _Status(this.text);
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+      child: Text(text, style: SearchText.caption),
     );
   }
 }

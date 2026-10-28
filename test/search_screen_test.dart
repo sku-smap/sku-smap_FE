@@ -8,6 +8,7 @@ import 'package:smap/features/campus/state/trip_controller.dart';
 import 'package:smap/features/search/data/mock_speech.dart';
 import 'package:smap/features/search/data/place_search.dart';
 import 'package:smap/features/search/presentation/screens/search_screen.dart';
+import 'package:smap/features/search/state/place_search_controller.dart';
 import 'package:smap/features/search/state/search_flow_controller.dart';
 
 GoRouter _router(String initial) {
@@ -73,6 +74,12 @@ String? _pushed(WidgetTester tester) {
   return (tester.widget<Text>(page).data ?? '').substring(5);
 }
 
+// Let the search debounce pass and the result arrive
+Future<void> _typed(WidgetTester tester) async {
+  await tester.pump(PlaceSearchController.debounce);
+  await tester.pump();
+}
+
 void main() {
   group('검색 규칙', () {
     test('부서·호실·별명으로 찾는다', () {
@@ -109,12 +116,12 @@ void main() {
     await _pumpSearch(tester, '/search');
 
     await tester.enterText(find.byType(TextField), '교무');
-    await tester.pump();
+    await _typed(tester);
     expect(find.text('행정사무실(교무처, 교육혁신처) (101호)'), findsOneWidget);
     expect(find.text('자주 찾는 곳'), findsNothing);
 
     await tester.enterText(find.byType(TextField), 'ㅁㄴㅇ');
-    await tester.pump();
+    await _typed(tester);
     expect(find.textContaining('‘ㅁㄴㅇ’ 검색 결과가 없어요'), findsOneWidget);
   });
 
@@ -122,7 +129,7 @@ void main() {
     final container = await _pumpSearch(tester, '/search');
 
     await tester.enterText(find.byType(TextField), '교무');
-    await tester.pump();
+    await _typed(tester);
     await _tap(tester, find.text('행정사무실(교무처, 교육혁신처) (101호)'));
 
     expect(container.read(tripProvider).to?.id, 'r-hyein-101');
@@ -143,7 +150,7 @@ void main() {
         .setTo(const CampusPlace(id: 'b-bonkwan', name: '본관'));
 
     await tester.enterText(find.byType(TextField), '북악');
-    await tester.pump();
+    await _typed(tester);
     await _tap(tester, find.text('북악관'));
     expect(
       _pushed(tester),
@@ -167,7 +174,7 @@ void main() {
     await _pumpSearch(tester, '/search?pick=from');
 
     await tester.enterText(find.byType(TextField), '북악관 1층 중앙');
-    await tester.pump();
+    await _typed(tester);
     expect(find.text('360 촬영 지점'), findsWidgets);
   });
 
