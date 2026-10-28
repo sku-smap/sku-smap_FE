@@ -64,6 +64,7 @@ abstract final class NavLayout {
   static const mapMaxWidth = 200.0;
   static const mapAspect = 171.4 / 114.5;
   static const floorBarTop = 250.0;
+  static const editInset = 10.0;
 
   static const cardInset = 10.0;
   static const cardRadius = 22.0;

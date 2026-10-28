@@ -2,9 +2,10 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
+import '../../../campus/data/campus_directory.dart';
+import '../../../campus/data/campus_models.dart';
+import '../../../campus/data/mock/campus_floors_mock.dart';
 import '../../../home/presentation/widgets/home_sheet.dart';
-import '../../../search/data/search_models.dart';
-import '../../data/campus_floors_mock.dart';
 import '../../data/navigation_models.dart';
 import '../../data/route_graph.dart';
 import '../navigation_tokens.dart';
@@ -17,7 +18,11 @@ import 'room_overlay.dart';
 import 'viewer_top_bar.dart';
 
 // Arrows for every link here; the next step's arrow glows
-List<ViewLink> viewLinks(String node, String? next) {
+List<ViewLink> viewLinks(
+  String node,
+  String? next, [
+  Map<String, double> yawOverrides = const {},
+]) {
   final elevator = next == null ? null : elevatorLinkTo(node, next);
   return [
     for (final l in linksOf(node))
@@ -28,7 +33,7 @@ List<ViewLink> viewLinks(String node, String? next) {
         final floor = target.floor ?? '';
         return ViewLink(
           to: to,
-          yaw: linkYawOf(node, l.to),
+          yaw: linkYawOf(node, l.to, yawOverrides),
           label: viaElevator ? '엘리베이터 → $floor' : target.title,
           sub: viaElevator
               ? target.title
@@ -57,6 +62,9 @@ class ViewerStage extends StatelessWidget {
     required this.onToggleMap,
     required this.bottom,
     this.overlays = const [],
+    this.yawOverrides = const {},
+    this.onPhotoTap,
+    this.editPanel,
   });
 
   final PanoSpot here;
@@ -69,6 +77,9 @@ class ViewerStage extends StatelessWidget {
   final VoidCallback onToggleMap;
   final Widget? bottom;
   final List<Widget> overlays;
+  final Map<String, double> yawOverrides;
+  final ValueChanged<double>? onPhotoTap;
+  final Widget? editPanel;
 
   @override
   Widget build(BuildContext context) {
@@ -102,10 +113,11 @@ class ViewerStage extends StatelessWidget {
           child: PanoView(
             key: ValueKey(here.id),
             node: here,
-            links: viewLinks(here.id, next),
+            links: viewLinks(here.id, next, yawOverrides),
             marks: panoMarks[here.id] ?? const [],
             onNavigate: onNavigate,
             onMark: onMark,
+            onPhotoTap: onPhotoTap,
           ),
         ),
         Positioned(
@@ -168,6 +180,13 @@ class ViewerStage extends StatelessWidget {
                 onFloor: onNavigate,
               ),
             ),
+          ),
+        if (editPanel case final panel?)
+          Positioned(
+            top: top + NavLayout.mapTop,
+            left: NavLayout.editInset,
+            right: NavLayout.editInset,
+            child: Align(alignment: Alignment.topLeft, child: panel),
           ),
         if (card != null)
           Positioned(
