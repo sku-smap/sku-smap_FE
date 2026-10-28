@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../features/home/presentation/screens/home_screen.dart';
+import '../features/search/presentation/screens/search_screen.dart';
 import 'widgets/placeholder_page.dart';
 
 abstract final class AppRoutes {
@@ -23,7 +24,8 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: AppRoutes.search,
-        builder: (context, state) => const PlaceholderPage(title: '검색'),
+        builder: (context, state) =>
+            SearchScreen(query: state.uri.queryParameters),
       ),
       GoRoute(
         path: AppRoutes.navigation,

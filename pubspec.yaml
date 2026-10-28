@@ -67,6 +67,7 @@ flutter:
     - assets/images/home/
     - assets/icons/
     - assets/icons/home/
+    - assets/icons/search/
 
   fonts:
     - family: Pretendard Variable
