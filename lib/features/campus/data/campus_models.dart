@@ -2,6 +2,9 @@ enum MapLevel { ground, underground }
 
 enum RouteMode { outdoor, elevator }
 
+// Route preference read from a search sentence; passed on to the route API
+enum RouteOption { outdoorFirst, comfortable, shortest, indoorUndergroundFirst }
+
 enum FacilityCategory {
   store('매점·편의점'),
   food('식당'),
