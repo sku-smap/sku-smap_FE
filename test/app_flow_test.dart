@@ -10,6 +10,7 @@ import 'package:smap/core/router.dart';
 import 'package:smap/features/campus/state/trip_controller.dart';
 import 'package:smap/features/navigation/data/guide_voice.dart';
 import 'package:smap/features/navigation/state/navigation_controller.dart';
+import 'package:smap/features/search/state/place_search_controller.dart';
 import 'package:smap/features/splash/presentation/screens/splash_screen.dart';
 
 final _pixel = MemoryImage(
@@ -79,6 +80,12 @@ Future<void> _settle(WidgetTester tester) async {
   await _frames(tester);
 }
 
+// Let the search debounce pass and the result arrive
+Future<void> _typed(WidgetTester tester) async {
+  await tester.pump(PlaceSearchController.debounce);
+  await tester.pump();
+}
+
 void main() {
   testWidgets('NFC 진입 → 홈 출발지 → 자주 찾는 곳 → 길안내 → 뒤로 가면 상태 유지', (tester) async {
     final router = await _launch(tester, link: '/?src=nfc&from=bus_stop');
@@ -108,7 +115,7 @@ void main() {
     expect(_location(router), '/search?pick=to');
 
     await tester.enterText(find.byType(TextField), '북악');
-    await tester.pump();
+    await _typed(tester);
     await _tap(tester, find.text('북악관'));
     expect(
       _location(router),
@@ -128,12 +135,12 @@ void main() {
 
     await _tap(tester, find.text('건물, 부서, 교수님 연구실 검색'));
     await tester.enterText(find.byType(TextField), '유담');
-    await tester.pump();
+    await _typed(tester);
     await _tap(tester, find.text('유담관').first);
     expect(find.text('어디에서 출발하나요?'), findsOneWidget);
 
     await tester.enterText(find.byType(TextField), '북악');
-    await tester.pump();
+    await _typed(tester);
     await _tap(tester, find.text('북악관'));
     expect(
       _location(router),
