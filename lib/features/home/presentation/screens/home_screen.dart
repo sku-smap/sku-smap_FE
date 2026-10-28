@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../report/presentation/widgets/applied_notice.dart';
 import '../../data/campus_models.dart';
 import '../../state/home_controller.dart';
 import '../../state/home_entry_provider.dart';
@@ -144,6 +145,7 @@ class HomeScreen extends ConsumerWidget {
               onReport: () => HomeRoutes.report(context),
             ),
           ),
+          const ReportAppliedNotice(),
         ],
       ),
     );
