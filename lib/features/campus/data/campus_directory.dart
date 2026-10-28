@@ -1,10 +1,27 @@
+import 'package:flutter/foundation.dart';
+
 import 'campus_models.dart';
 import 'mock/campus_buildings_mock.dart';
 import 'mock/nfc_places_mock.dart';
 import 'mock/pano_spots_mock.dart';
 import 'mock/search_places_mock.dart';
 
-final placeById = {for (final p in searchPlaces) p.id: p};
+// Bundled places until the server list arrives; server entries win by id
+final Map<String, SearchPlace> placeById = {
+  for (final p in searchPlaces) p.id: p,
+};
+
+// Keep server places resolvable by id for links, trips and guidance
+void registerPlaces(Iterable<SearchPlace> places) {
+  for (final p in places) {
+    placeById[p.id] = p;
+  }
+}
+
+@visibleForTesting
+void resetPlaces() => placeById
+  ..clear()
+  ..addAll({for (final p in searchPlaces) p.id: p});
 
 final spotById = {for (final n in panoSpots) n.id: n};
 
