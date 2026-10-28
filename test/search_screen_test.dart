@@ -1,12 +1,18 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:smap/core/network/app_exception.dart';
 import 'package:smap/core/router.dart';
 import 'package:smap/features/campus/data/campus_models.dart';
 import 'package:smap/features/campus/state/trip_controller.dart';
-import 'package:smap/features/search/data/mock_speech.dart';
+import 'package:smap/features/search/data/mock_search_repository.dart';
 import 'package:smap/features/search/data/place_search.dart';
+import 'package:smap/features/search/data/search_models.dart';
+import 'package:smap/features/search/data/search_repository.dart';
+import 'package:smap/features/search/data/voice_recorder.dart';
 import 'package:smap/features/search/presentation/screens/search_screen.dart';
 import 'package:smap/features/search/state/place_search_controller.dart';
 import 'package:smap/features/search/state/search_flow_controller.dart';
@@ -38,6 +44,7 @@ Future<ProviderContainer> _pumpSearch(
   WidgetTester tester,
   String initial, {
   String? transcript = '학생 어디야',
+  SearchRepository? repo,
 }) async {
   tester.view.physicalSize = const Size(390, 844);
   tester.view.devicePixelRatio = 1;
@@ -47,9 +54,10 @@ Future<ProviderContainer> _pumpSearch(
     ProviderScope(
       overrides: [
         routerProvider.overrideWithValue(router),
-        speechRecognizerProvider.overrideWithValue(
-          MockSpeechRecognizer(transcript: transcript),
+        searchRepositoryProvider.overrideWithValue(
+          repo ?? MockSearchRepository(transcript: transcript ?? ''),
         ),
+        voiceRecorderProvider.overrideWithValue(_FakeRecorder()),
       ],
       child: MaterialApp.router(routerConfig: router),
     ),
@@ -78,6 +86,23 @@ String? _pushed(WidgetTester tester) {
 Future<void> _typed(WidgetTester tester) async {
   await tester.pump(PlaceSearchController.debounce);
   await tester.pump();
+}
+
+class _FakeRecorder implements VoiceRecorder {
+  @override
+  Future<bool> start() async => true;
+
+  @override
+  Future<VoiceClip?> stop() async => VoiceClip(
+    bytes: Uint8List.fromList([1, 2, 3]),
+    duration: const Duration(seconds: 2),
+  );
+
+  @override
+  Future<void> cancel() async {}
+
+  @override
+  Future<void> dispose() async {}
 }
 
 void main() {
@@ -225,8 +250,6 @@ void main() {
     await _tap(tester, find.bySemanticsLabel('그만 듣기'));
     expect(find.text('알아듣는 중…'), findsOneWidget);
     await _wait(tester, 1000);
-    expect(find.text('찾는 중…'), findsOneWidget);
-    await _wait(tester, 700);
 
     expect(find.text('이렇게 들었어요'), findsOneWidget);
     expect(find.text('학생 어디야'), findsOneWidget);
@@ -273,4 +296,36 @@ void main() {
     await _tap(tester, find.bySemanticsLabel('음성으로 검색'));
     expect(find.text('이렇게 말해 보세요'), findsOneWidget);
   });
+
+  testWidgets('출발지 고르기에서 음성으로 고르면 출발지로 정한다', (tester) async {
+    final container = await _pumpSearch(tester, '/search?pick=from&mode=voice');
+
+    await _tap(tester, find.text('유담관이 어디에요?'));
+    await _wait(tester, 700);
+    expect(container.read(tripProvider).from?.id, 'b-yudam');
+    expect(container.read(tripProvider).to, isNull);
+    expect(find.text('home'), findsOneWidget);
+  });
+
+  testWidgets('검색이 실패하면 오류와 다시 시도를 보여준다', (tester) async {
+    await _pumpSearch(tester, '/search?mode=voice', repo: _FailingRepo());
+
+    await _tap(tester, find.text('유담관이 어디에요?'));
+    expect(find.text('인터넷 연결을 확인해 주세요.'), findsOneWidget);
+    expect(find.text('다시 시도'), findsOneWidget);
+  });
+}
+
+class _FailingRepo implements SearchRepository {
+  @override
+  Future<SearchResult> searchText({
+    required SearchTarget target,
+    required String query,
+  }) async => throw const NetworkException();
+
+  @override
+  Future<SearchResult> searchVoice({
+    required SearchTarget target,
+    required VoiceClip clip,
+  }) async => throw const NetworkException();
 }
