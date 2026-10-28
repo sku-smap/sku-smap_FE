@@ -3,8 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:smap/core/router.dart';
-import 'package:smap/features/home/data/campus_models.dart';
-import 'package:smap/features/home/state/home_controller.dart';
+import 'package:smap/features/campus/data/campus_models.dart';
+import 'package:smap/features/campus/state/trip_controller.dart';
 import 'package:smap/features/search/data/mock_speech.dart';
 import 'package:smap/features/search/data/place_search.dart';
 import 'package:smap/features/search/presentation/screens/search_screen.dart';
@@ -118,16 +118,14 @@ void main() {
     expect(find.textContaining('‘ㅁㄴㅇ’ 검색 결과가 없어요'), findsOneWidget);
   });
 
-  testWidgets('출발지가 없으면 도착지를 고른 뒤 출발지 고르기로 넘어간다 (S-09·S-10)', (
-    tester,
-  ) async {
+  testWidgets('출발지가 없으면 도착지를 고른 뒤 출발지 고르기로 넘어간다 (S-09·S-10)', (tester) async {
     final container = await _pumpSearch(tester, '/search');
 
     await tester.enterText(find.byType(TextField), '교무');
     await tester.pump();
     await _tap(tester, find.text('행정사무실(교무처, 교육혁신처) (101호)'));
 
-    expect(container.read(homeControllerProvider).to?.id, 'r-hyein-101');
+    expect(container.read(tripProvider).to?.id, 'r-hyein-101');
     expect(find.text('어디에서 출발하나요?'), findsOneWidget);
     expect(find.textContaining('까지 안내할게요. 지금 계신 곳을 골라주세요'), findsOneWidget);
     expect(find.text('현재 위치로'), findsOneWidget);
@@ -141,7 +139,7 @@ void main() {
   testWidgets('출발·도착이 다 정해지면 길안내로 바꾼다', (tester) async {
     final container = await _pumpSearch(tester, '/search?pick=from');
     container
-        .read(homeControllerProvider.notifier)
+        .read(tripProvider.notifier)
         .setTo(const CampusPlace(id: 'b-bonkwan', name: '본관'));
 
     await tester.enterText(find.byType(TextField), '북악');
@@ -151,6 +149,18 @@ void main() {
       _pushed(tester),
       '/navigation?from=b-bukak&to=b-bonkwan&mode=outdoor',
     );
+  });
+
+  testWidgets('링크로 받은 도착지가 이전 도착지보다 우선한다', (tester) async {
+    final container = await _pumpSearch(
+      tester,
+      '/search?pick=from&to=b-bonkwan',
+    );
+    await tester.pump();
+
+    expect(container.read(tripProvider).to?.id, 'b-bonkwan');
+    expect(find.text('본관까지 안내할게요. 지금 계신 곳을 골라주세요'), findsOneWidget);
+    await _wait(tester, 3600);
   });
 
   testWidgets('출발지 검색은 360 촬영 지점도 찾는다 (S-12)', (tester) async {
@@ -186,10 +196,7 @@ void main() {
 
     await _tap(tester, find.text('현재 위치로'));
     await _wait(tester, 700);
-    expect(
-      container.read(homeControllerProvider).from?.name,
-      startsWith('현재 위치 · '),
-    );
+    expect(container.read(tripProvider).from?.name, startsWith('현재 위치 · '));
     expect(find.text('home'), findsOneWidget);
   });
 
@@ -201,7 +208,7 @@ void main() {
     expect(find.text('찾는 중…'), findsOneWidget);
     await _wait(tester, 700);
 
-    expect(container.read(homeControllerProvider).to?.id, 'b-yudam');
+    expect(container.read(tripProvider).to?.id, 'b-yudam');
     expect(find.text('어디에서 출발하나요?'), findsOneWidget);
   });
 
@@ -225,7 +232,7 @@ void main() {
     await _tap(tester, find.text('졸업증명서 떼려면 어디로 가요?'));
     await _wait(tester, 700);
 
-    expect(container.read(homeControllerProvider).to?.name, '교무처');
+    expect(container.read(tripProvider).to?.name, '교무처');
     expect(find.textContaining('증명서 발급은 교무처'), findsOneWidget);
     expect(find.text('어디에서 출발하나요?'), findsOneWidget);
   });
@@ -244,16 +251,13 @@ void main() {
   testWidgets('계단 말고 라고 하면 엘리베이터 우선으로 안내한다', (tester) async {
     final container = await _pumpSearch(tester, '/search?mode=voice');
     container
-        .read(homeControllerProvider.notifier)
+        .read(tripProvider.notifier)
         .setFrom(const CampusPlace(id: 'f-bus', name: '버스정류장'));
 
     await _tap(tester, find.text('계단 말고 혜인관 가는 길'));
     await _wait(tester, 700);
-    expect(container.read(homeControllerProvider).mode, RouteMode.elevator);
-    expect(
-      _pushed(tester),
-      '/navigation?from=f-bus&to=b-hyein&mode=elevator',
-    );
+    expect(container.read(tripProvider).mode, RouteMode.elevator);
+    expect(_pushed(tester), '/navigation?from=f-bus&to=b-hyein&mode=elevator');
   });
 
   testWidgets('검색창 마이크로 음성 화면을 연다', (tester) async {

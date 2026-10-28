@@ -1,14 +1,16 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:panorama_viewer/panorama_viewer.dart';
 import 'package:smap/core/router.dart';
-import 'package:smap/features/home/data/campus_models.dart';
+import 'package:smap/features/campus/data/campus_models.dart';
+import 'package:smap/features/campus/state/launch_provider.dart';
+import 'package:smap/features/campus/state/trip_controller.dart';
 import 'package:smap/features/explore/presentation/screens/explore_screen.dart';
-import 'package:smap/features/home/state/home_controller.dart';
-import 'package:smap/features/home/state/home_entry_provider.dart';
 import 'package:smap/features/navigation/state/navigation_controller.dart';
 
 final _pixel = MemoryImage(
@@ -51,7 +53,7 @@ Future<ProviderContainer> _pump(
   final container = ProviderContainer(
     overrides: [
       routerProvider.overrideWithValue(router),
-      homeLaunchQueryProvider.overrideWithValue(launch),
+      launchQueryProvider.overrideWithValue(launch),
       photoImageProvider.overrideWithValue((_) => _pixel),
     ],
   );
@@ -112,7 +114,7 @@ void main() {
 
     await _tap(tester, find.text('여기서 출발'));
     expect(find.text('page /search?pick=to'), findsOneWidget);
-    final from = container.read(homeControllerProvider).from;
+    final from = container.read(tripProvider).from;
     expect(from?.id, 'gate_front');
     expect(from?.name, '정문 앞');
     await _settleToast(tester);
@@ -144,7 +146,7 @@ void main() {
   testWidgets('일반 사진 지점은 안내 문구와 이동 칩을 보여준다 (E-08)', (tester) async {
     final container = await _pump(tester, '/');
     container
-        .read(homeControllerProvider.notifier)
+        .read(tripProvider.notifier)
         .setFrom(const CampusPlace(id: 'hill_entrance', name: '폭풍의언덕 입'));
     GoRouter.of(tester.element(find.text('home'))).push('/explore');
     await tester.pump();
@@ -160,6 +162,60 @@ void main() {
 
     await _tap(tester, find.bySemanticsLabel('제보하기'));
     expect(find.text('page /report?node=gate_front'), findsOneWidget);
+    await _settleToast(tester);
+  });
+
+  testWidgets('보정 모드가 아니면 방향 보정 패널이 없다', (tester) async {
+    await _pump(tester, '/explore');
+
+    expect(find.textContaining('방향 보정 모드'), findsNothing);
+    expect(
+      tester.widget<PanoramaViewer>(find.byType(PanoramaViewer)).onTap,
+      isNull,
+    );
+    await _settleToast(tester);
+  });
+
+  testWidgets('방향 보정 모드는 고른 길의 방향을 사진 탭으로 고친다 (A-01)', (tester) async {
+    final copied = <String>[];
+    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+      SystemChannels.platform,
+      (call) async {
+        if (call.method == 'Clipboard.setData') {
+          copied.add((call.arguments as Map)['text'] as String);
+        }
+        return null;
+      },
+    );
+    addTearDown(
+      () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform,
+        null,
+      ),
+    );
+    await _pump(tester, '/explore', launch: {'edit': '1'});
+
+    expect(
+      find.text('방향 보정 모드 — 길을 고른 뒤, 사진에서 그 길이 보이는 곳을 탭하세요.'),
+      findsOneWidget,
+    );
+    expect(find.text('보정값 복사 (0)'), findsOneWidget);
+    expect(find.text('정문 앞 3갈래 교차로 6°'), findsOneWidget);
+
+    await _tap(tester, find.text('정문 앞 3갈래 교차로 6°'));
+    tester.widget<PanoramaViewer>(find.byType(PanoramaViewer)).onTap!(
+      -90,
+      0,
+      0,
+    );
+    await tester.pump();
+    expect(find.text('정문 앞 3갈래 교차로 270°'), findsOneWidget);
+    expect(find.text('보정값 복사 (1)'), findsOneWidget);
+
+    await _tap(tester, find.text('보정값 복사 (1)'));
+    // The arrow passes a hidden photo, so the fix is keyed to that link
+    expect(copied.single, '{"gate_front>parking_3way":270.0}');
+    expect(find.text('보정값 1개를 복사했어요'), findsOneWidget);
     await _settleToast(tester);
   });
 }

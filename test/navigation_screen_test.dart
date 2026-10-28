@@ -5,7 +5,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:smap/core/router.dart';
-import 'package:smap/features/home/data/campus_models.dart';
+import 'package:smap/features/campus/data/campus_directory.dart';
+import 'package:smap/features/campus/data/campus_models.dart';
+import 'package:smap/features/campus/state/trip_controller.dart';
 import 'package:smap/features/navigation/data/guide_voice.dart';
 import 'package:smap/features/navigation/data/route_graph.dart';
 import 'package:smap/features/navigation/presentation/screens/navigation_screen.dart';
@@ -222,5 +224,28 @@ void main() {
 
     await _tap(tester, find.bySemanticsLabel('제보하기 (헷갈려요·못 가요)'));
     expect(find.text('page /report?node=gate_front&step=0'), findsOneWidget);
+  });
+
+  testWidgets('링크에 출발·도착이 없으면 전역 출발·도착과 옵션으로 안내한다', (tester) async {
+    await _pump(tester, '/');
+    final home = tester.element(find.text('home'));
+    ProviderScope.containerOf(home).read(tripProvider.notifier)
+      ..setFrom(const CampusPlace(id: 'f-gate', name: '정문'))
+      ..setTo(const CampusPlace(id: 'r-bukak-954', name: 'GS25 편의점'));
+    GoRouter.of(home).push('/navigation');
+    await tester.pump();
+    await tester.pump();
+
+    expect(find.text('1 / 8단계'), findsOneWidget);
+    expect(find.text('→ GS25 편의점'), findsOneWidget);
+  });
+
+  testWidgets('잘못된 장소 ID로 열면 돌아갈 수 있다', (tester) async {
+    await _pump(tester, '/navigation?from=nope&to=b-bonkwan&mode=fly');
+
+    expect(find.text('아직 연결된 길 데이터가 없어요'), findsOneWidget);
+    await _tap(tester, find.text('돌아가기'));
+    expect(find.text('home'), findsOneWidget);
+    await tester.pump(const Duration(seconds: 4));
   });
 }
