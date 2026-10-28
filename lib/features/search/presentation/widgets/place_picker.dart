@@ -18,9 +18,11 @@ class PlacePicker extends ConsumerStatefulWidget {
     required this.onPick,
     required this.onClose,
     required this.onVoice,
+    this.title,
   });
 
   final PickTarget target;
+  final String? title;
   final ValueChanged<CampusPlace> onPick;
   final VoidCallback onClose;
   final VoidCallback onVoice;
@@ -93,7 +95,7 @@ class _PlacePickerState extends ConsumerState<PlacePicker> {
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
                 child: Text(
-                  _isFrom ? '어디에서 출발하나요?' : '어디로 갈까요?',
+                  widget.title ?? (_isFrom ? '어디에서 출발하나요?' : '어디로 갈까요?'),
                   style: SearchText.title,
                 ),
               ),
