@@ -1,12 +1,18 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/network/app_config.dart';
+import '../../../core/network/data_source.dart';
+import '../../../core/network/dio_provider.dart';
 import '../../../core/state/toast_host.dart';
 import '../../campus/state/launch_provider.dart';
+import '../data/api_search_repository.dart';
 import '../data/location_service.dart';
 import '../data/mock_location.dart';
-import '../data/mock_speech.dart';
+import '../data/mock_search_repository.dart';
+import '../data/record_voice_recorder.dart';
 import '../data/search_models.dart';
-import '../data/speech_recognizer.dart';
+import '../data/search_repository.dart';
+import '../data/voice_recorder.dart';
 
 typedef SearchEntry = ({PickTarget target, bool voice, String? intro});
 
@@ -67,6 +73,16 @@ final locatorProvider = Provider<LocationService>(
   (ref) => MockLocator(onCampus: ref.watch(launchEntryProvider).onCampus),
 );
 
-final speechRecognizerProvider = Provider<SpeechRecognizer>(
-  (ref) => const MockSpeechRecognizer(),
+final searchRepositoryProvider = Provider<SearchRepository>(
+  (ref) => selectDataSource(
+    ref.watch(appConfigProvider),
+    mock: MockSearchRepository.new,
+    api: () => ApiSearchRepository(ref.watch(apiClientProvider)),
+  ),
 );
+
+final voiceRecorderProvider = Provider<VoiceRecorder>((ref) {
+  final recorder = RecordVoiceRecorder();
+  ref.onDispose(recorder.dispose);
+  return recorder;
+});

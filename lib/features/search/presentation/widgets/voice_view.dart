@@ -18,21 +18,29 @@ const _examples = [
 ];
 
 class VoiceView extends ConsumerWidget {
-  const VoiceView({super.key, required this.onClose, required this.onResult});
+  const VoiceView({
+    super.key,
+    required this.target,
+    required this.onClose,
+    required this.onResult,
+  });
 
+  final SearchTarget target;
   final VoidCallback onClose;
-  final ValueChanged<VoiceIntent> onResult;
+  final ValueChanged<VoiceOutcome> onResult;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final state = ref.watch(voiceControllerProvider);
-    final controller = ref.read(voiceControllerProvider.notifier);
-    ref.listen(voiceControllerProvider.select((s) => s.result), (_, result) {
+    final provider = voiceControllerProvider(target);
+    final state = ref.watch(provider);
+    final controller = ref.read(provider.notifier);
+    ref.listen(provider.select((s) => s.result), (_, result) {
       if (result != null) onResult(result);
     });
 
     final busy = state.busy != null;
     final candidates = state.candidates;
+    final error = state.error;
     final padding = MediaQuery.paddingOf(context);
 
     return DecoratedBox(
@@ -71,12 +79,29 @@ class VoiceView extends ConsumerWidget {
                           textAlign: TextAlign.center,
                           style: SearchText.voiceText,
                         ),
+                        if (error != null) ...[
+                          const SizedBox(height: 22),
+                          _ChipWrap(
+                            caption: error,
+                            captionStyle: SearchText.voiceSub,
+                            children: [
+                              if (error != VoiceController.micDenied)
+                                _Chip(
+                                  label: '다시 시도',
+                                  light: true,
+                                  onTap: controller.retry,
+                                ),
+                            ],
+                          ),
+                        ],
                         if (candidates != null) ...[
                           const SizedBox(height: 22),
                           _ChipWrap(
-                            caption: candidates.isNotEmpty
-                                ? '혹시 이곳인가요?'
-                                : '등록된 장소를 찾지 못했어요. 건물 이름을 넣어 다시 말해 주세요.',
+                            caption:
+                                state.message ??
+                                (candidates.isNotEmpty
+                                    ? '혹시 이곳인가요?'
+                                    : '등록된 장소를 찾지 못했어요. 건물 이름을 넣어 다시 말해 주세요.'),
                             captionStyle: SearchText.voiceSub,
                             children: [
                               for (final p in candidates)

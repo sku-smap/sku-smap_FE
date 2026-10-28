@@ -13,12 +13,16 @@ class TripState {
     this.to,
     this.mode = RouteMode.outdoor,
     this.indoor = false,
+    this.routeOption,
   });
 
   final CampusPlace? from;
   final CampusPlace? to;
   final RouteMode mode;
   final bool indoor;
+
+  // Preference the search understood, kept for the route API
+  final RouteOption? routeOption;
 
   bool get canRoute => from != null && to != null;
 
@@ -27,12 +31,14 @@ class TripState {
     CampusPlace? Function()? to,
     RouteMode? mode,
     bool? indoor,
+    RouteOption? Function()? routeOption,
   }) {
     return TripState(
       from: from != null ? from() : this.from,
       to: to != null ? to() : this.to,
       mode: mode ?? this.mode,
       indoor: indoor ?? this.indoor,
+      routeOption: routeOption != null ? routeOption() : this.routeOption,
     );
   }
 }
@@ -72,7 +78,23 @@ class TripController extends Notifier<TripState> {
   void swap() =>
       state = state.copyWith(from: () => state.to, to: () => state.from);
 
-  void setMode(RouteMode mode) => state = state.copyWith(mode: mode);
+  // A manual choice replaces what the search understood
+  void setMode(RouteMode mode) =>
+      state = state.copyWith(mode: mode, routeOption: () => null);
+
+  // Shortest has no app option, so only the stored value changes
+  void applyRouteOption(RouteOption option) {
+    if (option == RouteOption.indoorUndergroundFirst) _indoorTouched = true;
+    state = state.copyWith(
+      routeOption: () => option,
+      mode: switch (option) {
+        RouteOption.comfortable => RouteMode.elevator,
+        RouteOption.outdoorFirst => RouteMode.outdoor,
+        _ => null,
+      },
+      indoor: option == RouteOption.indoorUndergroundFirst ? true : null,
+    );
+  }
 
   void toggleIndoor() {
     _indoorTouched = true;
