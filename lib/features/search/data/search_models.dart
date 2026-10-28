@@ -49,20 +49,32 @@ class PanoSpot {
   const PanoSpot({
     required this.id,
     required this.title,
+    required this.building,
+    this.floor,
     required this.x,
     required this.y,
     this.level = MapLevel.ground,
     this.flat = false,
     this.hidden = false,
+    this.center = false,
+    this.estimated = false,
+    this.roomList,
   });
 
   final String id;
   final String title;
+  final String building;
+  final String? floor;
   final double x;
   final double y;
   final MapLevel level;
   final bool flat;
   final bool hidden;
+  final bool center;
+  final bool estimated;
+  final bool? roomList;
+
+  bool get outdoor => building == 'outdoor';
 
   CampusPlace get spot => CampusPlace(id: id, name: title);
 }
