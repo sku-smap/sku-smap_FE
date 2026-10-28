@@ -115,6 +115,21 @@ class MyReport {
   final List<String>? tags;
   final bool local;
 
+  MyReport copyWith({ReportStatus? status}) => MyReport(
+    id: id,
+    createdAt: createdAt,
+    kind: kind,
+    node: node,
+    type: type,
+    memo: memo,
+    status: status ?? this.status,
+    until: until,
+    fromNode: fromNode,
+    toNode: toNode,
+    tags: tags,
+    local: local,
+  );
+
   factory MyReport.fromJson(Map<String, dynamic> json) => MyReport(
     id: json['id'] as int,
     createdAt: DateTime.parse(json['created_at'] as String),

@@ -15,7 +15,6 @@ abstract final class SearchColors {
   static const navy = AppColors.navy;
   static const blueSoft = AppColors.blueSoft;
   static const error = AppColors.error;
-  static const toast = AppColors.navy;
 
   static const placeholder = Color(0xFF757575);
   static const errorBg = Color(0xFFFFEEEE);
@@ -35,9 +34,6 @@ abstract final class SearchColors {
 }
 
 abstract final class SearchShadows {
-  static const toast = [
-    BoxShadow(color: Color(0x5900156A), offset: Offset(0, 8), blurRadius: 24),
-  ];
   static const mic = [
     BoxShadow(color: Color(0x59001E5A), offset: Offset(0, 10), blurRadius: 30),
   ];
@@ -53,9 +49,6 @@ abstract final class SearchLayout {
   static const rowRadius = 12.0;
   static const resultIcon = 40.0;
   static const resultIconRadius = 12.0;
-
-  static const toastInset = 16.0;
-  static const toastRadius = 14.0;
 
   static const voiceTop = 60.0;
   static const voiceSide = 20.0;
@@ -109,13 +102,6 @@ abstract final class SearchText {
     fontSize: 13,
     height: 19.5 / 13,
     color: SearchColors.error,
-  );
-  static final toast = _base.copyWith(
-    fontSize: 14,
-    fontWeight: FontWeight.w600,
-    fontVariations: const [FontVariation.weight(600)],
-    height: 19.6 / 14,
-    color: Colors.white,
   );
 
   static final voiceHint = _base.copyWith(

@@ -3,9 +3,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../search/presentation/widgets/search_toast.dart';
+import '../../../../core/widgets/app_toast.dart';
 import '../../state/report_providers.dart';
-import 'report_toast.dart';
 
 // Shortly after launch, thank the user once for reports that were applied
 class ReportAppliedNotice extends ConsumerStatefulWidget {
@@ -32,7 +31,7 @@ class _ReportAppliedNoticeState extends ConsumerState<ReportAppliedNotice> {
     final message = await ref.read(appliedNoticeProvider.future);
     if (!mounted || message == null) return;
     setState(() => _message = message);
-    _timer = Timer(reportToastDuration, () => setState(() => _message = null));
+    _timer = Timer(appToastDuration, () => setState(() => _message = null));
   }
 
   @override
@@ -42,5 +41,5 @@ class _ReportAppliedNoticeState extends ConsumerState<ReportAppliedNotice> {
   }
 
   @override
-  Widget build(BuildContext context) => SearchToast(message: _message);
+  Widget build(BuildContext context) => AppToast(message: _message);
 }

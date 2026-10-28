@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../campus/data/campus_models.dart';
+import '../../../campus/state/campus_status_providers.dart';
+import '../../../campus/state/trip_controller.dart';
 import '../../../report/presentation/widgets/applied_notice.dart';
-import '../../data/campus_models.dart';
 import '../../state/home_controller.dart';
-import '../../state/home_entry_provider.dart';
 import '../home_routes.dart';
 import '../home_tokens.dart';
 import '../widgets/building_sheet.dart';
@@ -22,28 +23,19 @@ class HomeScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final state = ref.watch(homeControllerProvider);
+    final trip = ref.watch(tripProvider);
+    final tripController = ref.read(tripProvider.notifier);
+    final home = ref.watch(homeControllerProvider);
     final controller = ref.read(homeControllerProvider.notifier);
-    final closures = ref.watch(campusClosuresProvider);
+    final closures = ref.watch(campusClosuresProvider).value ?? const [];
+    final weather = ref.watch(campusWeatherProvider).value;
 
-    void startRoute() {
-      final s = ref.read(homeControllerProvider);
-      final from = s.from;
-      final to = s.to;
-      if (from == null || to == null) return;
-      HomeRoutes.navigate(
-        context,
-        from: from,
-        to: to,
-        mode: s.mode,
-        indoor: s.indoor,
-      );
-    }
+    void startRoute() => HomeRoutes.navigate(context, ref.read(tripProvider));
 
     // Pick a destination, then ask for the start or go straight to guidance
     void chooseTo(CampusPlace place) {
-      controller.setTo(place);
-      if (ref.read(homeControllerProvider).from != null) {
+      tripController.setTo(place);
+      if (ref.read(tripProvider).from != null) {
         startRoute();
       } else {
         HomeRoutes.pickFrom(context, to: place);
@@ -51,8 +43,8 @@ class HomeScreen extends ConsumerWidget {
     }
 
     void chooseFrom(CampusPlace place) {
-      controller.setFrom(place);
-      if (ref.read(homeControllerProvider).to != null) startRoute();
+      tripController.setFrom(place);
+      if (ref.read(tripProvider).to != null) startRoute();
     }
 
     void openBuilding(CampusBuilding building) {
@@ -95,14 +87,14 @@ class HomeScreen extends ConsumerWidget {
                   HomeHero(
                     onSearch: () => HomeRoutes.search(context),
                     routeCard: RouteCard(
-                      state: state,
-                      weather: ref.watch(campusWeatherProvider),
+                      trip: trip,
+                      weather: weather ?? const CampusWeather(),
                       onPickFrom: () => HomeRoutes.pickFrom(context),
                       onPickTo: () => HomeRoutes.pickTo(context),
-                      onSwap: controller.swap,
-                      onMode: controller.setMode,
+                      onSwap: tripController.swap,
+                      onMode: tripController.setMode,
                       onGo: startRoute,
-                      onIndoor: controller.toggleIndoor,
+                      onIndoor: tripController.toggleIndoor,
                     ),
                   ),
                   if (closures.isNotEmpty)
@@ -123,8 +115,8 @@ class HomeScreen extends ConsumerWidget {
                       horizontal: HomeLayout.screenH,
                     ),
                     child: CampusMapCard(
-                      level: state.level,
-                      facility: state.facility,
+                      level: home.level,
+                      facility: home.facility,
                       onLevel: controller.setLevel,
                       onFacility: controller.setFacility,
                       onBuilding: openBuilding,

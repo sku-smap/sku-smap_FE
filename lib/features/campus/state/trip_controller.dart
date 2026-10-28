@@ -1,0 +1,76 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../data/campus_directory.dart';
+import '../data/campus_models.dart';
+import 'campus_status_providers.dart';
+import 'launch_provider.dart';
+
+// Start, destination and route options shared by every screen
+class TripState {
+  const TripState({
+    this.from,
+    this.to,
+    this.mode = RouteMode.outdoor,
+    this.indoor = false,
+  });
+
+  final CampusPlace? from;
+  final CampusPlace? to;
+  final RouteMode mode;
+  final bool indoor;
+
+  bool get canRoute => from != null && to != null;
+
+  TripState copyWith({
+    CampusPlace? Function()? from,
+    CampusPlace? Function()? to,
+    RouteMode? mode,
+    bool? indoor,
+  }) {
+    return TripState(
+      from: from != null ? from() : this.from,
+      to: to != null ? to() : this.to,
+      mode: mode ?? this.mode,
+      indoor: indoor ?? this.indoor,
+    );
+  }
+}
+
+class TripController extends Notifier<TripState> {
+  var _indoorTouched = false;
+
+  @override
+  TripState build() {
+    final launch = ref.read(launchEntryProvider);
+    // Rain turns indoor routing on until the user changes it
+    ref.listen(campusWeatherProvider, (_, next) {
+      final wet = next.value?.isWet;
+      if (wet != null && !_indoorTouched) {
+        state = state.copyWith(indoor: wet);
+      }
+    });
+    return TripState(
+      from: resolvePlace(launch.from),
+      to: resolvePlace(launch.to),
+      indoor: ref.read(campusWeatherProvider).value?.isWet ?? false,
+    );
+  }
+
+  void setFrom(CampusPlace place) => state = state.copyWith(from: () => place);
+
+  void setTo(CampusPlace place) => state = state.copyWith(to: () => place);
+
+  void swap() =>
+      state = state.copyWith(from: () => state.to, to: () => state.from);
+
+  void setMode(RouteMode mode) => state = state.copyWith(mode: mode);
+
+  void toggleIndoor() {
+    _indoorTouched = true;
+    state = state.copyWith(indoor: !state.indoor);
+  }
+}
+
+final tripProvider = NotifierProvider<TripController, TripState>(
+  TripController.new,
+);

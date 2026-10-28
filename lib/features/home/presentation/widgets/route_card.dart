@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
-import '../../data/campus_models.dart';
+import '../../../campus/data/campus_models.dart';
+import '../../../campus/state/trip_controller.dart';
 import '../../data/home_assets.dart';
-import '../../state/home_controller.dart';
 import '../home_tokens.dart';
 import 'home_segmented.dart';
 import 'pressable.dart';
@@ -11,7 +11,7 @@ import 'pressable.dart';
 class RouteCard extends StatelessWidget {
   const RouteCard({
     super.key,
-    required this.state,
+    required this.trip,
     required this.weather,
     required this.onPickFrom,
     required this.onPickTo,
@@ -21,7 +21,7 @@ class RouteCard extends StatelessWidget {
     required this.onIndoor,
   });
 
-  final HomeState state;
+  final TripState trip;
   final CampusWeather weather;
   final VoidCallback onPickFrom;
   final VoidCallback onPickTo;
@@ -52,14 +52,14 @@ class RouteCard extends StatelessWidget {
                     children: [
                       _RouteField(
                         label: '출발',
-                        value: state.from?.name,
+                        value: trip.from?.name,
                         placeholder: '출발지 선택 (NFC 태그 시 자동)',
                         onTap: onPickFrom,
                       ),
                       const SizedBox(height: HomeLayout.fieldGap),
                       _RouteField(
                         label: '도착',
-                        value: state.to?.name,
+                        value: trip.to?.name,
                         placeholder: '도착지 선택',
                         onTap: onPickTo,
                       ),
@@ -81,16 +81,16 @@ class RouteCard extends StatelessWidget {
                     (RouteMode.outdoor, '야외 경로 우선'),
                     (RouteMode.elevator, '엘리베이터 우선'),
                   ],
-                  selected: state.mode,
+                  selected: trip.mode,
                   onChanged: onMode,
                 ),
                 const SizedBox(width: 10),
-                Expanded(child: _GoButton(onTap: state.canRoute ? onGo : null)),
+                Expanded(child: _GoButton(onTap: trip.canRoute ? onGo : null)),
               ],
             ),
           ),
           const SizedBox(height: 16),
-          _IndoorToggle(on: state.indoor, weather: weather, onTap: onIndoor),
+          _IndoorToggle(on: trip.indoor, weather: weather, onTap: onIndoor),
         ],
       ),
     );

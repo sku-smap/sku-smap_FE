@@ -4,7 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../home/state/home_controller.dart';
+import '../../../../core/widgets/app_toast.dart';
+import '../../../campus/state/trip_controller.dart';
 import '../../../search/data/search_models.dart';
 import '../../../search/presentation/widgets/place_picker.dart';
 import '../../data/report_models.dart';
@@ -14,7 +15,6 @@ import '../report_routes.dart';
 import '../report_tokens.dart';
 import '../widgets/report_form.dart';
 import '../widgets/report_kind_list.dart';
-import '../widgets/report_toast.dart';
 
 // Report sheet over the screen it was opened from (?node=&step=&kind=)
 class ReportScreen extends ConsumerStatefulWidget {
@@ -52,7 +52,7 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
     super.initState();
     final q = widget.query;
     final node = q['node'];
-    final from = ref.read(homeControllerProvider).from;
+    final from = ref.read(tripProvider).from;
     _entry = (
       kind: ReportKind.values.where((k) => k.name == q['kind']).firstOrNull,
       node: node,
@@ -80,7 +80,7 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
       final thanks = await controller.send();
       if (thanks == null || !context.mounted) return;
       ReportRoutes.close(context);
-      showReportToast(overlay, thanks);
+      showOverlayToast(overlay, thanks);
     }
 
     Future<void> addPhoto() async {
@@ -132,7 +132,12 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
                     onPick: (place) =>
                         controller.picked(reportSpotFromPlace(place)),
                     onClose: () => controller.startPick(null),
-                    onVoice: () => ReportRoutes.voice(context),
+                    onVoice: () async {
+                      final place = await ReportRoutes.voice(context);
+                      if (place != null) {
+                        controller.picked(reportSpotFromPlace(place));
+                      }
+                    },
                   ),
                 ),
               ),
