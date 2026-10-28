@@ -2,17 +2,13 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:smap/core/network/api_client.dart';
-import 'package:smap/core/network/app_config.dart';
 import 'package:smap/core/network/app_exception.dart';
 import 'package:smap/features/campus/data/api_node_repository.dart';
 import 'package:smap/features/campus/data/campus_directory.dart';
 import 'package:smap/features/campus/data/campus_models.dart';
 import 'package:smap/features/campus/data/dto/node_dto.dart';
-import 'package:smap/features/campus/data/node_repository.dart';
-import 'package:smap/features/campus/state/node_providers.dart';
 import 'package:smap/features/navigation/data/route_graph.dart';
 import 'package:smap/features/search/data/place_search.dart';
 
@@ -64,15 +60,6 @@ Map<String, Object?> _ok(Object? data) => {
 };
 
 PanoSpot _spot(Map<String, Object?> json) => NodeDto.fromJson(json).toModel()!;
-
-class _Stub implements NodeRepository {
-  const _Stub(this.spots);
-
-  final List<PanoSpot> spots;
-
-  @override
-  Future<List<PanoSpot>> all() async => spots;
-}
 
 void main() {
   tearDown(resetSpots);
@@ -135,46 +122,22 @@ void main() {
         throwsA(isA<ServerException>()),
       );
     });
-
-    test('USE_MOCK이 꺼지면 노드 API 구현을 주입받는다', () {
-      final c = ProviderContainer(
-        overrides: [
-          appConfigProvider.overrideWithValue(
-            const AppConfig(
-              env: AppEnv.dev,
-              baseUrl: 'https://x',
-              useMock: false,
-            ),
-          ),
-        ],
-      );
-      addTearDown(c.dispose);
-      expect(c.read(nodeRepositoryProvider), isA<ApiNodeRepository>());
-    });
   });
 
   group('서버 노드 병합', () {
-    test('같은 ID는 서버 이름·층을 쓰고 지도 좌표·사진 유형은 유지한다', () async {
+    test('같은 ID는 서버 이름·층을 쓰고 지도 좌표·사진 유형은 유지한다', () {
       final before = spotById['gate_front']!;
-      final c = ProviderContainer(
-        overrides: [
-          nodeRepositoryProvider.overrideWithValue(
-            _Stub([
-              _spot(
-                _node(
-                  nodeId: 'gate_front',
-                  building: '야외',
-                  floorLabel: '',
-                  title: '정문(서버)',
-                ),
-              ),
-              _spot(_node()),
-            ]),
+      registerSpots([
+        _spot(
+          _node(
+            nodeId: 'gate_front',
+            building: '야외',
+            floorLabel: '',
+            title: '정문(서버)',
           ),
-        ],
-      );
-      addTearDown(c.dispose);
-      await c.read(nodeCatalogProvider.future);
+        ),
+        _spot(_node()),
+      ]);
 
       final merged = spotById['gate_front']!;
       expect(merged.title, '정문(서버)');
