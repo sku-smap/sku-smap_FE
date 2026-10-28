@@ -65,6 +65,7 @@ abstract final class NavLayout {
   static const mapAspect = 171.4 / 114.5;
   static const floorBarTop = 250.0;
   static const editInset = 10.0;
+  static const chipBottom = 230.0;
 
   static const cardInset = 10.0;
   static const cardRadius = 22.0;

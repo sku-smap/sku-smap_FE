@@ -8,6 +8,7 @@ import '../../data/navigation_models.dart';
 import '../../state/navigation_controller.dart';
 import '../navigation_tokens.dart';
 import 'link_arrow.dart';
+import 'viewer_notice.dart';
 
 class PanoView extends ConsumerStatefulWidget {
   const PanoView({
@@ -43,8 +44,9 @@ class _PanoViewState extends ConsumerState<PanoView> {
     },
   );
 
-  ImageProvider get _image =>
-      ref.read(photoImageProvider)(NavigationAssets.pano(widget.node.id));
+  ImageProvider get _image => ref.read(photoImageProvider)(
+    widget.node.imageUrl ?? NavigationAssets.pano(widget.node.id),
+  );
 
   @override
   void initState() {
@@ -81,11 +83,19 @@ class _PanoViewState extends ConsumerState<PanoView> {
     if (_failed) return _PhotoError(onRetry: _retry);
     if (widget.node.flat) return _FlatPhoto(widget: widget, image: image);
 
-    // Same destination twice gets one arrow
+    // Same destination twice gets one arrow; unknown directions become chips
     final seen = <String>{};
-    final links = [
+    final unique = [
       for (final l in widget.links)
         if (seen.add(l.to)) l,
+    ];
+    final links = [
+      for (final l in unique)
+        if (!l.chip) l,
+    ];
+    final chips = [
+      for (final l in unique)
+        if (l.chip) l,
     ];
     final primaryYaw = links.where((l) => l.primary).firstOrNull?.yaw ?? 0;
 
@@ -134,6 +144,13 @@ class _PanoViewState extends ConsumerState<PanoView> {
               child: Image(image: image),
             ),
           ),
+          if (chips.isNotEmpty)
+            Positioned(
+              left: 16,
+              right: 16,
+              bottom: NavLayout.chipBottom,
+              child: _LinkChips(links: chips, onNavigate: widget.onNavigate),
+            ),
           if (_loading) const Center(child: _Loading()),
         ],
       ),
@@ -151,21 +168,7 @@ class _PhotoError extends StatelessWidget {
     return ColoredBox(
       color: NavColors.photoBg,
       child: Center(
-        child: Semantics(
-          button: true,
-          liveRegion: true,
-          child: GestureDetector(
-            onTap: onRetry,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-              decoration: BoxDecoration(
-                color: NavColors.loading,
-                borderRadius: BorderRadius.circular(999),
-              ),
-              child: Text('사진을 불러오지 못했어요 · 다시 시도', style: NavText.loading),
-            ),
-          ),
-        ),
+        child: ViewerNotice(text: '사진을 불러오지 못했어요 · 다시 시도', onTap: onRetry),
       ),
     );
   }
@@ -345,36 +348,52 @@ class _FlatPhoto extends StatelessWidget {
               style: NavText.stepHint.copyWith(color: const Color(0xB3FFFFFF)),
             ),
           ),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            alignment: WrapAlignment.center,
-            children: [
-              for (final l in widget.links)
-                GestureDetector(
-                  onTap: () => widget.onNavigate(l.to),
-                  child: Container(
-                    height: 38,
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      color: l.primary ? NavColors.blue : NavColors.surface,
-                      borderRadius: BorderRadius.circular(999),
-                    ),
-                    child: Text(
-                      l.primary ? '다음 → ${l.label}' : l.label,
-                      style: NavText.rateChip.copyWith(
-                        fontSize: 14,
-                        color: l.primary ? NavColors.surface : NavColors.navy,
-                      ),
-                    ),
-                  ),
-                ),
-            ],
-          ),
-          const SizedBox(height: 230),
+          _LinkChips(links: widget.links, onNavigate: widget.onNavigate),
+          const SizedBox(height: NavLayout.chipBottom),
         ],
       ),
+    );
+  }
+}
+
+// Move buttons for links without a photo direction (regular photos too)
+class _LinkChips extends StatelessWidget {
+  const _LinkChips({required this.links, required this.onNavigate});
+
+  final List<ViewLink> links;
+  final ValueChanged<String> onNavigate;
+
+  @override
+  Widget build(BuildContext context) {
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      alignment: WrapAlignment.center,
+      children: [
+        for (final l in links)
+          Semantics(
+            button: true,
+            child: GestureDetector(
+              onTap: () => onNavigate(l.to),
+              child: Container(
+                height: 38,
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: l.primary ? NavColors.blue : NavColors.surface,
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Text(
+                  l.primary ? '다음 → ${l.label}' : l.label,
+                  style: NavText.rateChip.copyWith(
+                    fontSize: 14,
+                    color: l.primary ? NavColors.surface : NavColors.navy,
+                  ),
+                ),
+              ),
+            ),
+          ),
+      ],
     );
   }
 }
