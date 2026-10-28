@@ -33,12 +33,52 @@ class PanoView extends ConsumerStatefulWidget {
 
 class _PanoViewState extends ConsumerState<PanoView> {
   var _loading = true;
+  var _failed = false;
+  var _attempt = 0;
+  ImageStream? _stream;
+  late final _listener = ImageStreamListener(
+    (_, _) {},
+    onError: (_, _) {
+      if (mounted) setState(() => _failed = true);
+    },
+  );
+
+  ImageProvider get _image =>
+      ref.read(photoImageProvider)(NavigationAssets.pano(widget.node.id));
+
+  @override
+  void initState() {
+    super.initState();
+    _watch();
+  }
+
+  @override
+  void dispose() {
+    _stream?.removeListener(_listener);
+    super.dispose();
+  }
+
+  // Notice a missing or broken photo, which the viewer itself never reports
+  void _watch() {
+    _stream?.removeListener(_listener);
+    _stream = _image.resolve(ImageConfiguration.empty)..addListener(_listener);
+  }
+
+  Future<void> _retry() async {
+    await _image.evict();
+    if (!mounted) return;
+    setState(() {
+      _failed = false;
+      _loading = true;
+      _attempt++;
+    });
+    _watch();
+  }
 
   @override
   Widget build(BuildContext context) {
-    final image = ref.read(photoImageProvider)(
-      NavigationAssets.pano(widget.node.id),
-    );
+    final image = _image;
+    if (_failed) return _PhotoError(onRetry: _retry);
     if (widget.node.flat) return _FlatPhoto(widget: widget, image: image);
 
     // Same destination twice gets one arrow
@@ -55,6 +95,7 @@ class _PanoViewState extends ConsumerState<PanoView> {
         children: [
           Positioned.fill(
             child: PanoramaViewer(
+              key: ValueKey(_attempt),
               // Face the next path when the photo opens
               longitude: primaryYaw,
               latitude: -5,
@@ -95,6 +136,36 @@ class _PanoViewState extends ConsumerState<PanoView> {
           ),
           if (_loading) const Center(child: _Loading()),
         ],
+      ),
+    );
+  }
+}
+
+class _PhotoError extends StatelessWidget {
+  const _PhotoError({required this.onRetry});
+
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return ColoredBox(
+      color: NavColors.photoBg,
+      child: Center(
+        child: Semantics(
+          button: true,
+          liveRegion: true,
+          child: GestureDetector(
+            onTap: onRetry,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              decoration: BoxDecoration(
+                color: NavColors.loading,
+                borderRadius: BorderRadius.circular(999),
+              ),
+              child: Text('사진을 불러오지 못했어요 · 다시 시도', style: NavText.loading),
+            ),
+          ),
+        ),
       ),
     );
   }
