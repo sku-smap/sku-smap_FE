@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../home/data/campus_models.dart';
-import '../../data/mock_location.dart';
+import '../../../campus/data/campus_models.dart';
+import '../../data/location_service.dart';
 import '../../data/place_search.dart';
 import '../../data/search_models.dart';
 import '../../state/search_flow_controller.dart';
@@ -54,6 +54,7 @@ class _PlacePickerState extends ConsumerState<PlacePicker> {
 
   // Use the nearest photo spot to the current location as the start
   Future<void> _findMe() async {
+    if (_finding) return;
     setState(() {
       _finding = true;
       _locateError = null;

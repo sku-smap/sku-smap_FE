@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../data/campus_models.dart';
+import '../../../campus/data/campus_models.dart';
 import '../../data/home_mock.dart';
 import '../home_tokens.dart';
 

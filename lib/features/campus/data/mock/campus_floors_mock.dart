@@ -1,6 +1,6 @@
 // Mock data ported from smap_test src/data
 
-import 'navigation_models.dart';
+import '../../../navigation/data/navigation_models.dart';
 
 const buildingNames = <String, String>{
   'yudam': '유담관',

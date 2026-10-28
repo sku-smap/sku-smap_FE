@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
-import '../../data/campus_models.dart';
+import '../../../campus/data/campus_models.dart';
 import '../../data/home_assets.dart';
 import '../home_tokens.dart';
 import 'home_sheet.dart';

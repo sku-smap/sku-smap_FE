@@ -1,14 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../home/data/campus_models.dart';
-import '../../../home/state/home_controller.dart';
+import '../../../../core/widgets/app_toast.dart';
+import '../../../campus/data/campus_directory.dart';
+import '../../../campus/data/campus_models.dart';
+import '../../../campus/state/trip_controller.dart';
 import '../../data/search_models.dart';
 import '../../state/search_flow_controller.dart';
 import '../search_routes.dart';
 import '../search_tokens.dart';
 import '../widgets/place_picker.dart';
-import '../widgets/search_toast.dart';
 import '../widgets/voice_view.dart';
 
 class SearchScreen extends ConsumerStatefulWidget {
@@ -22,14 +23,18 @@ class SearchScreen extends ConsumerStatefulWidget {
 
 class _SearchScreenState extends ConsumerState<SearchScreen> {
   late final SearchEntry _entry;
+  late final bool _forReport;
 
-  // ?pick=from|to, ?mode=voice, ?to= (destination already chosen on home)
+  // ?pick=from|to, ?mode=voice, ?to= (destination already chosen on home),
+  // ?for=report (voice answer goes back to the report sheet)
   @override
   void initState() {
     super.initState();
     final query = widget.query;
     final from = query['pick'] == 'from';
-    final to = ref.read(homeControllerProvider).to;
+    final linkTo = resolvePlace(query['to']);
+    final to = linkTo ?? ref.read(tripProvider).to;
+    _forReport = query['for'] == 'report';
     _entry = (
       target: from ? PickTarget.from : PickTarget.to,
       voice: query['mode'] == 'voice',
@@ -37,6 +42,10 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
           ? '${to.name}까지 안내할게요. 지금 계신 곳을 골라주세요'
           : null,
     );
+    // A destination in the link wins over the one kept from before
+    if (linkTo != null && linkTo.id != ref.read(tripProvider).to?.id) {
+      Future.microtask(() => ref.read(tripProvider.notifier).setTo(linkTo));
+    }
   }
 
   @override
@@ -44,26 +53,14 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     final provider = searchFlowProvider(_entry);
     final flow = ref.watch(provider);
     final flowController = ref.read(provider.notifier);
-    final home = ref.read(homeControllerProvider.notifier);
+    final trip = ref.read(tripProvider.notifier);
 
-    void startRoute() {
-      final s = ref.read(homeControllerProvider);
-      final from = s.from;
-      final to = s.to;
-      if (from == null || to == null) return;
-      SearchRoutes.navigate(
-        context,
-        from: from,
-        to: to,
-        mode: s.mode,
-        indoor: s.indoor,
-      );
-    }
+    void startRoute() => SearchRoutes.navigate(context, ref.read(tripProvider));
 
     // Destination first: guide now if the start is known, else ask for it
     void chooseTo(CampusPlace place) {
-      home.setTo(place);
-      if (ref.read(homeControllerProvider).from != null) {
+      trip.setTo(place);
+      if (ref.read(tripProvider).from != null) {
         startRoute();
       } else {
         flowController.pick(PickTarget.from);
@@ -72,8 +69,8 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     }
 
     void chooseFrom(CampusPlace place) {
-      home.setFrom(place);
-      if (ref.read(homeControllerProvider).to != null) {
+      trip.setFrom(place);
+      if (ref.read(tripProvider).to != null) {
         startRoute();
       } else {
         SearchRoutes.close(context);
@@ -84,10 +81,14 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     void onVoiceResult(VoiceIntent intent) {
       final to = intent.to;
       if (to == null) return;
-      final from = intent.from?.spot ?? ref.read(homeControllerProvider).from;
-      home.setTo(to.spot);
-      if (intent.from != null && from != null) home.setFrom(from);
-      if (intent.avoidStairs) home.setMode(RouteMode.elevator);
+      if (_forReport) {
+        SearchRoutes.close(context, to.spot);
+        return;
+      }
+      final from = intent.from?.spot ?? ref.read(tripProvider).from;
+      trip.setTo(to.spot);
+      if (intent.from != null && from != null) trip.setFrom(from);
+      if (intent.avoidStairs) trip.setMode(RouteMode.elevator);
       final reply = intent.reply;
       if (reply != null) flowController.toast(reply);
       if (from != null && from.id != to.id) {
@@ -121,7 +122,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                     ),
                   ),
           ),
-          SearchToast(message: flow.toast),
+          AppToast(message: flow.toast),
         ],
       ),
     );

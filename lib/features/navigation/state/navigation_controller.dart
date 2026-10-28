@@ -1,11 +1,10 @@
-import 'dart:async';
-
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../home/data/campus_models.dart';
-import '../../home/state/home_entry_provider.dart';
-import '../../search/data/pano_spots_mock.dart';
+import '../../../core/state/toast_host.dart';
+import '../../campus/data/campus_directory.dart';
+import '../../campus/data/campus_models.dart';
+import '../../campus/state/campus_status_providers.dart';
 import '../data/guide_voice.dart';
 import '../data/navigation_models.dart';
 import '../data/route_graph.dart';
@@ -19,6 +18,7 @@ typedef NavigationEntry = ({
 
 class NavigationState {
   const NavigationState({
+    this.loading = false,
     this.route,
     this.node,
     this.showMap = true,
@@ -27,6 +27,7 @@ class NavigationState {
     this.toast,
   });
 
+  final bool loading;
   final ActiveRoute? route;
   final String? node;
   final bool showMap;
@@ -62,6 +63,7 @@ class NavigationState {
     String? Function()? toast,
   }) {
     return NavigationState(
+      loading: loading,
       route: route != null ? route() : this.route,
       node: node ?? this.node,
       showMap: showMap ?? this.showMap,
@@ -72,30 +74,25 @@ class NavigationState {
   }
 }
 
-class NavigationController extends Notifier<NavigationState> {
+class NavigationController extends Notifier<NavigationState>
+    with ToastHost<NavigationState> {
   NavigationController(this.entry);
 
-  static const toastDuration = Duration(milliseconds: 3200);
-
   final NavigationEntry entry;
-  Timer? _toastTimer;
-
-  // Spots the home closure card says are blocked
-  Set<String> get _blocked {
-    final places = ref.read(campusClosuresProvider).map((c) => c.place);
-    return {
-      for (final n in panoSpots)
-        if (places.contains(n.title)) n.id,
-    };
-  }
+  Set<String> _blocked = const {};
 
   @override
   NavigationState build() {
+    bindToast();
     final voice = ref.read(guideVoiceProvider);
-    ref.onDispose(() {
-      _toastTimer?.cancel();
-      voice.stop();
-    });
+    ref.onDispose(voice.stop);
+    // Route once closures and weather are known so blocked spots are avoided
+    final closures = ref.watch(campusClosuresProvider);
+    final weather = ref.watch(campusWeatherProvider);
+    if (closures.isLoading || weather.isLoading) {
+      return const NavigationState(loading: true);
+    }
+    _blocked = {for (final c in closures.value ?? const <Closure>[]) c.node};
     final from = routeEndFor(entry.from);
     final to = routeEndFor(entry.to);
     final path = from == null || to == null
@@ -108,16 +105,16 @@ class NavigationController extends Notifier<NavigationState> {
             blocked: _blocked,
           );
     if (from == null || to == null || path == null) {
-      _scheduleHide();
+      scheduleToastHide();
       return const NavigationState(toast: '아직 연결된 길 데이터가 없어요');
     }
-    final wet = ref.read(campusWeatherProvider).isWet;
+    final wet = weather.value?.isWet ?? false;
     final notice = entry.indoor && wet
         ? '비가 와서 실내·지하 길로 먼저 안내해요'
         : entry.mode == RouteMode.elevator && usesStairs(path)
         ? '엘리베이터로만 가는 길이 없어서 계단이 조금 포함돼요'
         : null;
-    if (notice != null) _scheduleHide();
+    if (notice != null) scheduleToastHide();
     final initial = NavigationState(
       route: ActiveRoute(from: from, to: to, path: path),
       node: path.first,
@@ -127,6 +124,10 @@ class NavigationController extends Notifier<NavigationState> {
     return initial;
   }
 
+  @override
+  NavigationState withToast(NavigationState state, String? message) =>
+      state.copyWith(toast: () => message);
+
   // Move to a spot; off the route, search again from there
   void goTo(String node) {
     final route = state.route;
@@ -135,6 +136,7 @@ class NavigationController extends Notifier<NavigationState> {
         node,
         route.to.node,
         mode: entry.mode,
+        indoor: entry.indoor,
         blocked: _blocked,
       );
       if (path != null) {
@@ -171,22 +173,10 @@ class NavigationController extends Notifier<NavigationState> {
 
   void praise() => state = state.copyWith(praised: true);
 
-  void toast(String message) {
-    state = state.copyWith(toast: () => message);
-    _scheduleHide();
-  }
-
   void _speak(NavigationState s) {
     final text = s.text;
     if (s.muted || text.isEmpty) return;
     ref.read(guideVoiceProvider).speak(text);
-  }
-
-  void _scheduleHide() {
-    _toastTimer?.cancel();
-    _toastTimer = Timer(toastDuration, () {
-      state = state.copyWith(toast: () => null);
-    });
   }
 }
 

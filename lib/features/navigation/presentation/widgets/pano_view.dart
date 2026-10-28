@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:panorama_viewer/panorama_viewer.dart';
 
-import '../../../search/data/search_models.dart';
+import '../../../campus/data/campus_models.dart';
 import '../../data/navigation_assets.dart';
 import '../../data/navigation_models.dart';
 import '../../state/navigation_controller.dart';
@@ -17,6 +17,7 @@ class PanoView extends ConsumerStatefulWidget {
     required this.marks,
     required this.onNavigate,
     required this.onMark,
+    this.onPhotoTap,
   });
 
   final PanoSpot node;
@@ -24,6 +25,7 @@ class PanoView extends ConsumerStatefulWidget {
   final List<PanoMark> marks;
   final ValueChanged<String> onNavigate;
   final ValueChanged<PanoMark> onMark;
+  final ValueChanged<double>? onPhotoTap;
 
   @override
   ConsumerState<PanoView> createState() => _PanoViewState();
@@ -56,6 +58,9 @@ class _PanoViewState extends ConsumerState<PanoView> {
               // Face the next path when the photo opens
               longitude: primaryYaw,
               latitude: -5,
+              onTap: widget.onPhotoTap == null
+                  ? null
+                  : (longitude, _, _) => widget.onPhotoTap!(longitude),
               onImageLoad: () {
                 if (mounted && _loading) setState(() => _loading = false);
               },

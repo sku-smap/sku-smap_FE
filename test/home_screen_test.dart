@@ -140,7 +140,7 @@ void main() {
     expect(find.text('어디로 갈까요?'), findsNWidgets(2));
 
     await _tap(tester, find.text('노브랜드버거'));
-    expect(_pushed(tester), '/search?pick=from&to=fac-food-nobrand');
+    expect(_pushed(tester), '/search?pick=from&to=r-chungwoon-957');
   });
 
   testWidgets('건물 핀을 누르면 건물 시트를 띄운다 (H-18·H-20)', (tester) async {

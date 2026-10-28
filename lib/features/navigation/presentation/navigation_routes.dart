@@ -1,5 +1,4 @@
 import 'package:flutter/widgets.dart';
-import 'package:go_router/go_router.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../../../core/router.dart';
@@ -7,32 +6,17 @@ import '../data/navigation_assets.dart';
 import '../data/navigation_models.dart';
 
 abstract final class NavigationRoutes {
-  static void exit(BuildContext context) {
-    final router = GoRouter.maybeOf(context);
-    if (router == null) return;
-    if (router.canPop()) {
-      router.pop();
-    } else {
-      router.go(AppRoutes.home);
-    }
-  }
+  static void exit(BuildContext context) => AppNav.close(context);
 
   static void report(
     BuildContext context, {
     required String node,
     int? step,
     String? kind,
-  }) {
-    final uri = Uri(
-      path: AppRoutes.report,
-      queryParameters: {
-        'node': node,
-        if (step != null) 'step': '$step',
-        'kind': ?kind,
-      },
-    );
-    GoRouter.maybeOf(context)?.push(uri.toString());
-  }
+  }) => AppNav.push(
+    context,
+    AppRoutes.reportUri(node: node, step: step, kind: kind),
+  );
 
   // Open the OS share sheet with a link that starts the same route
   static Future<void> share(ActiveRoute route) {

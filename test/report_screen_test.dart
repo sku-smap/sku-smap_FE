@@ -7,11 +7,12 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:smap/core/router.dart';
-import 'package:smap/features/home/data/campus_models.dart';
+import 'package:smap/features/campus/data/campus_models.dart';
+import 'package:smap/features/campus/state/launch_provider.dart';
+import 'package:smap/features/campus/state/trip_controller.dart';
 import 'package:smap/features/home/presentation/widgets/pressable.dart';
-import 'package:smap/features/home/state/home_controller.dart';
-import 'package:smap/features/home/state/home_entry_provider.dart';
-import 'package:smap/features/report/data/report_api.dart';
+import 'package:smap/features/report/data/mock_report_repository.dart';
+import 'package:smap/features/report/data/report_models.dart';
 import 'package:smap/features/report/presentation/screens/my_reports_screen.dart';
 import 'package:smap/features/report/presentation/screens/report_screen.dart';
 import 'package:smap/features/report/presentation/widgets/applied_notice.dart';
@@ -45,23 +46,26 @@ Future<ProviderContainer> _pump(
   bool online = false,
   String? photo,
   CampusPlace? from,
+  bool freshDevice = true,
 }) async {
   tester.view.physicalSize = const Size(390, 844);
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.reset);
-  SharedPreferences.setMockInitialValues({});
+  if (freshDevice) SharedPreferences.setMockInitialValues({});
   final router = _router();
   final container = ProviderContainer(
     overrides: [
       routerProvider.overrideWithValue(router),
-      homeLaunchQueryProvider.overrideWithValue(const {}),
-      reportApiProvider.overrideWithValue(MockReportApi(online: online)),
+      launchQueryProvider.overrideWithValue(const {}),
+      reportRepositoryProvider.overrideWithValue(
+        MockReportRepository(online: online),
+      ),
       photoPickerProvider.overrideWithValue(() async => photo),
     ],
   );
   addTearDown(container.dispose);
   if (from != null) {
-    container.read(homeControllerProvider.notifier).setFrom(from);
+    container.read(tripProvider.notifier).setFrom(from);
   }
   await tester.pumpWidget(
     UncontrolledProviderScope(
@@ -325,7 +329,9 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            reportApiProvider.overrideWithValue(MockReportApi(online: true)),
+            reportRepositoryProvider.overrideWithValue(
+              MockReportRepository(online: true),
+            ),
           ],
           child: const MaterialApp(
             home: Scaffold(body: Stack(children: [ReportAppliedNotice()])),
@@ -353,5 +359,53 @@ void main() {
     await tester.runAsync(() => Future<void>.delayed(Duration.zero));
     await tester.pump();
     expect(find.text(notice), findsNothing);
+  });
+
+  testWidgets('앱을 다시 열어도 이 기기에 저장한 제보를 복원한다', (tester) async {
+    await _pump(tester, '/report');
+    await _tap(tester, find.text('정보가 틀려요'));
+    await _tap(tester, find.text('기타'));
+    await _send(tester);
+    await tester.pump(const Duration(seconds: 4));
+
+    // Relaunch: new providers, same device storage
+    await tester.pumpWidget(const SizedBox());
+    await _pump(tester, '/report/mine', freshDevice: false);
+    expect(find.text('위치 없이 보낸 제보'), findsOneWidget);
+    expect(find.text('이 기기에만 저장됨 · 서버가 연결되면 다시 보내 주세요'), findsOneWidget);
+  });
+
+  testWidgets('검색 화면의 음성으로 고른 곳이 제보 위치가 된다', (tester) async {
+    await _pump(tester, '/report');
+    await _tap(tester, find.text('안내가 정확해요'));
+    await _tap(tester, find.text('검색'));
+    await _tap(tester, find.bySemanticsLabel('음성으로 검색'));
+    expect(find.text('page /search?mode=voice&for=report'), findsOneWidget);
+
+    GoRouter.of(tester.element(find.textContaining('page ')))
+        .pop(const CampusPlace(id: 'b-bonkwan', name: '본관'));
+    await tester.pumpAndSettle();
+    expect(find.text('어디인가요?'), findsNothing);
+    expect(find.text('본관'), findsOneWidget);
+    expect(_sendEnabled(tester), isTrue);
+  });
+
+  test('mock 처리 상태가 반영됨으로 바뀌면 다음 실행 때 한 번 알려준다', () async {
+    SharedPreferences.setMockInitialValues({});
+    final server = MockReportRepository(online: true);
+    Future<String?> launch() async {
+      final c = ProviderContainer(
+        overrides: [reportRepositoryProvider.overrideWithValue(server)],
+      );
+      addTearDown(c.dispose);
+      return c.read(appliedNoticeProvider.future);
+    }
+
+    expect(await launch(), contains('더 좋은 길 알려줄게요'));
+    expect(await launch(), isNull);
+
+    server.setStatus(103, ReportStatus.applied);
+    expect(await launch(), "🎉 제보하신 '지금 못 가요'이 반영됐어요. 고마워요!");
+    expect(await launch(), isNull);
   });
 }

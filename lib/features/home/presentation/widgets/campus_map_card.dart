@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
-import '../../data/campus_buildings_mock.dart';
-import '../../data/campus_facilities_mock.dart';
-import '../../data/campus_models.dart';
+import '../../../campus/data/campus_models.dart';
+import '../../../campus/data/mock/campus_buildings_mock.dart';
+import '../../../campus/data/mock/campus_facilities_mock.dart';
 import '../../data/home_assets.dart';
 import '../../data/home_mock.dart';
 import '../home_tokens.dart';

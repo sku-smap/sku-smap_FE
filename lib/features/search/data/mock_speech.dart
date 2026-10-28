@@ -1,11 +1,12 @@
-class MockSpeechRecognizer {
-  const MockSpeechRecognizer({this.transcript = '학생 어디야'});
+import 'speech_recognizer.dart';
 
-  static const maxListen = Duration(seconds: 8);
+// Stand-in for server speech-to-text; returns a fixed sentence
+class MockSpeechRecognizer implements SpeechRecognizer {
+  const MockSpeechRecognizer({this.transcript = '학생 어디야'});
 
   final String? transcript;
 
-  // Stand-in for server speech-to-text after recording stops
+  @override
   Future<String?> transcribe() async {
     await Future<void>.delayed(const Duration(milliseconds: 900));
     return transcript;

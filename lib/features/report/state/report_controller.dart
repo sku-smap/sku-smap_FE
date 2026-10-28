@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../home/data/campus_models.dart';
-import '../../navigation/data/route_graph.dart';
+import '../../campus/data/campus_directory.dart';
+import '../../campus/data/campus_models.dart';
 import '../data/report_models.dart';
 import '../data/report_options.dart';
 import 'report_providers.dart';
@@ -23,7 +23,7 @@ ReportSpot? reportSpotOf(String? node) {
 
 // A home place (building or spot id) as a report location
 ReportSpot reportSpotFromPlace(CampusPlace place) =>
-    (node: routeEndFor(place.id)?.node ?? place.id, label: place.name);
+    (node: nodeOf(place.id) ?? place.id, label: place.name);
 
 class ReportFormState {
   const ReportFormState({
@@ -182,8 +182,9 @@ class ReportController extends Notifier<ReportFormState> {
       tags: course ? s.tags : null,
       photoPath: kind == ReportKind.praise ? null : s.photo,
     );
-    final ok = await ref.read(reportApiProvider).send(report);
+    final ok = await ref.read(reportRepositoryProvider).send(report);
     if (!ok) await ref.read(reportStorageProvider).saveLocal(report);
+    ref.invalidate(myReportsProvider);
     if (ref.mounted) state = state.copyWith(sending: false);
     return kind.thanks;
   }

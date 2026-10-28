@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../home/data/campus_models.dart';
-import '../../../search/presentation/widgets/search_toast.dart';
-import '../../data/route_graph.dart';
+import '../../../../core/widgets/app_toast.dart';
+import '../../../campus/data/campus_directory.dart';
+import '../../../campus/data/campus_models.dart';
+import '../../../campus/state/trip_controller.dart';
+import '../../state/link_yaw_controller.dart';
 import '../../state/navigation_controller.dart';
 import '../navigation_routes.dart';
 import '../navigation_tokens.dart';
@@ -24,18 +26,20 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> {
   late final NavigationEntry _entry;
   var _showSteps = false;
 
-  // ?from=&to=&mode=outdoor|elevator&indoor=1
+  // Link query wins (?from=&to=&mode=&indoor=1); the trip fills gaps
   @override
   void initState() {
     super.initState();
     final q = widget.query;
+    final trip = ref.read(tripProvider);
+    final linked = q['from'] != null || q['to'] != null;
     _entry = (
-      from: q['from'],
-      to: q['to'],
+      from: q['from'] ?? trip.from?.id,
+      to: q['to'] ?? trip.to?.id,
       mode:
           RouteMode.values.where((m) => m.name == q['mode']).firstOrNull ??
-          RouteMode.outdoor,
-      indoor: q['indoor'] == '1',
+          (linked ? RouteMode.outdoor : trip.mode),
+      indoor: linked ? q['indoor'] == '1' : trip.indoor,
     );
   }
 
@@ -46,6 +50,10 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> {
     final controller = ref.read(provider.notifier);
     final node = state.node;
     final here = node == null ? null : spotById[node];
+
+    if (state.loading) {
+      return const Scaffold(backgroundColor: NavColors.photoBg);
+    }
 
     if (here == null) {
       return Scaffold(
@@ -61,7 +69,7 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> {
                 ),
               ),
             ),
-            SearchToast(message: state.toast),
+            AppToast(message: state.toast),
           ],
         ),
       );
@@ -81,6 +89,7 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> {
           route: route,
           next: state.next,
           showMap: state.showMap,
+          yawOverrides: ref.watch(linkYawProvider).value ?? const {},
           onNavigate: controller.goTo,
           onMark: (m) {
             if (m.desc.isNotEmpty) controller.toast(m.desc);
@@ -117,7 +126,7 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> {
                   onClose: () => setState(() => _showSteps = false),
                 ),
               ),
-            SearchToast(message: state.toast),
+            AppToast(message: state.toast),
           ],
         ),
       ),

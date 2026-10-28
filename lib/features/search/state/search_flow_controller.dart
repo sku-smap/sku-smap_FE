@@ -1,11 +1,12 @@
-import 'dart:async';
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../home/state/home_entry_provider.dart';
+import '../../../core/state/toast_host.dart';
+import '../../campus/state/launch_provider.dart';
+import '../data/location_service.dart';
 import '../data/mock_location.dart';
 import '../data/mock_speech.dart';
 import '../data/search_models.dart';
+import '../data/speech_recognizer.dart';
 
 typedef SearchEntry = ({PickTarget target, bool voice, String? intro});
 
@@ -29,19 +30,17 @@ class SearchFlowState {
   }
 }
 
-class SearchFlowController extends Notifier<SearchFlowState> {
+class SearchFlowController extends Notifier<SearchFlowState>
+    with ToastHost<SearchFlowState> {
   SearchFlowController(this.entry);
 
-  static const toastDuration = Duration(milliseconds: 3200);
-
   final SearchEntry entry;
-  Timer? _toastTimer;
 
   @override
   SearchFlowState build() {
-    ref.onDispose(() => _toastTimer?.cancel());
+    bindToast();
     final intro = entry.intro;
-    if (intro != null) _scheduleHide();
+    if (intro != null) scheduleToastHide();
     return SearchFlowState(
       target: entry.target,
       voice: entry.voice,
@@ -49,23 +48,14 @@ class SearchFlowController extends Notifier<SearchFlowState> {
     );
   }
 
+  @override
+  SearchFlowState withToast(SearchFlowState state, String? message) =>
+      state.copyWith(toast: () => message);
+
   void pick(PickTarget target) =>
       state = state.copyWith(target: target, voice: false);
 
   void openVoice() => state = state.copyWith(voice: true);
-
-  // Show a short notice that hides itself
-  void toast(String message) {
-    state = state.copyWith(toast: () => message);
-    _scheduleHide();
-  }
-
-  void _scheduleHide() {
-    _toastTimer?.cancel();
-    _toastTimer = Timer(toastDuration, () {
-      state = state.copyWith(toast: () => null);
-    });
-  }
 }
 
 final searchFlowProvider = NotifierProvider.autoDispose
@@ -73,12 +63,10 @@ final searchFlowProvider = NotifierProvider.autoDispose
       SearchFlowController.new,
     );
 
-// Mock GPS: ?location=campus puts you on campus, otherwise off campus
-final locatorProvider = Provider<MockLocator>((ref) {
-  final query = ref.watch(homeLaunchQueryProvider);
-  return MockLocator(onCampus: query['location'] == 'campus');
-});
+final locatorProvider = Provider<LocationService>(
+  (ref) => MockLocator(onCampus: ref.watch(launchEntryProvider).onCampus),
+);
 
-final speechRecognizerProvider = Provider<MockSpeechRecognizer>(
+final speechRecognizerProvider = Provider<SpeechRecognizer>(
   (ref) => const MockSpeechRecognizer(),
 );

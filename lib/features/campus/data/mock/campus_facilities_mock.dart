@@ -1,4 +1,4 @@
-import 'campus_models.dart';
+import '../campus_models.dart';
 
 const campusFacilities = [
   FacilitySpot(
@@ -6,7 +6,7 @@ const campusFacilities = [
     building: '청운관',
     mapX: 81,
     mapY: 31,
-    places: [CampusPlace(id: 'fac-store-emart24', name: '이마트24 편의점')],
+    places: [CampusPlace(id: 'r-chungwoon-955', name: '이마트24 편의점')],
   ),
   FacilitySpot(
     category: FacilityCategory.store,
@@ -21,7 +21,7 @@ const campusFacilities = [
     mapX: 18,
     mapY: 18,
     level: MapLevel.underground,
-    places: [CampusPlace(id: 'fac-store-gs25', name: 'GS25 편의점')],
+    places: [CampusPlace(id: 'r-bukak-954', name: 'GS25 편의점')],
   ),
   FacilitySpot(
     category: FacilityCategory.food,
@@ -36,8 +36,8 @@ const campusFacilities = [
     mapX: 81,
     mapY: 31,
     places: [
-      CampusPlace(id: 'fac-food-suyuri', name: '수유리우동'),
-      CampusPlace(id: 'fac-food-nobrand', name: '노브랜드버거'),
+      CampusPlace(id: 'r-chungwoon-956', name: '수유리우동'),
+      CampusPlace(id: 'r-chungwoon-957', name: '노브랜드버거'),
     ],
   ),
   FacilitySpot(
@@ -73,7 +73,7 @@ const campusFacilities = [
     building: '청운관',
     mapX: 81,
     mapY: 31,
-    places: [CampusPlace(id: 'fac-atm-shinhan', name: '신한은행 ATM')],
+    places: [CampusPlace(id: 'b-chungwoon', name: '신한은행 ATM')],
   ),
   FacilitySpot(
     category: FacilityCategory.post,
@@ -87,7 +87,7 @@ const campusFacilities = [
     building: '북악관',
     mapX: 24,
     mapY: 20,
-    places: [CampusPlace(id: 'fac-print-bukak', name: '프린트기')],
+    places: [CampusPlace(id: 'b-bukak', name: '프린트기')],
   ),
   FacilitySpot(
     category: FacilityCategory.print,

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
+import '../../../campus/data/campus_models.dart';
 import '../../../search/data/search_assets.dart';
-import '../../../search/data/search_models.dart';
 import '../../data/navigation_assets.dart';
 import '../../data/route_graph.dart';
 import '../navigation_tokens.dart';

@@ -1,14 +1,10 @@
 import 'dart:math' as math;
 
-import '../../home/data/campus_models.dart';
-import '../../search/data/pano_spots_mock.dart';
-import '../../search/data/place_search.dart';
-import '../../search/data/search_models.dart';
-import 'campus_floors_mock.dart';
+import '../../campus/data/campus_directory.dart';
+import '../../campus/data/campus_models.dart';
+import '../../campus/data/mock/campus_floors_mock.dart';
+import '../../campus/data/mock/route_graph_mock.dart';
 import 'navigation_models.dart';
-import 'route_graph_mock.dart';
-
-final spotById = {for (final n in panoSpots) n.id: n};
 
 bool _hidden(String id) => spotById[id]?.hidden ?? false;
 
@@ -166,11 +162,21 @@ String instruction(String a, String b) {
 
 const _spread = [0.0, 180.0, 90.0, -90.0, 45.0, -45.0, 135.0, -135.0];
 
-// Arrow direction in the photo (degrees, 0 = photo center)
-double linkYawOf(String from, String to) {
+// Key of the photo arrow for a link, through any hidden photo in between
+String linkYawKey(String from, String to) {
   final through = linksOf(from).where((l) => l.to == to).firstOrNull?.through;
-  if (through != null) return linkYawOf(from, through);
-  final known = linkYaw['$from>$to'];
+  return '$from>${through ?? to}';
+}
+
+// Arrow direction in the photo (degrees, 0 = photo center)
+double linkYawOf(
+  String from,
+  String to, [
+  Map<String, double> overrides = const {},
+]) {
+  final through = linksOf(from).where((l) => l.to == to).firstOrNull?.through;
+  if (through != null) return linkYawOf(from, through, overrides);
+  final known = overrides['$from>$to'] ?? linkYaw['$from>$to'];
   if (known != null) return known;
   final raw = routeLinks[from] ?? const <RouteLink>[];
   final i = raw.indexWhere((l) => l.to == to);

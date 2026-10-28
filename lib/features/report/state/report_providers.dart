@@ -2,16 +2,17 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 
-import '../../home/state/home_entry_provider.dart';
-import '../data/report_api.dart';
+import '../../campus/state/launch_provider.dart';
+import '../data/mock_report_repository.dart';
 import '../data/report_models.dart';
+import '../data/report_repository.dart';
 import '../data/report_storage.dart';
 
 // Mock server: ?reports=demo acts connected, otherwise reports stay on device
-final reportApiProvider = Provider<MockReportApi>((ref) {
-  final demo = ref.watch(homeLaunchQueryProvider)['reports'] == 'demo';
-  return MockReportApi(online: demo);
-});
+final reportRepositoryProvider = Provider<ReportRepository>(
+  (ref) =>
+      MockReportRepository(online: ref.watch(launchEntryProvider).demoReports),
+);
 
 final reportStorageProvider = Provider<ReportStorage>(
   (ref) => const ReportStorage(),
@@ -43,7 +44,7 @@ typedef MyReports = ({List<MyReport> rows, bool online});
 
 // Device reports plus server reports, newest first
 final myReportsProvider = FutureProvider.autoDispose<MyReports>((ref) async {
-  final server = await ref.watch(reportApiProvider).listMine();
+  final server = await ref.watch(reportRepositoryProvider).listMine();
   final local = await ref.watch(reportStorageProvider).loadLocal();
   final rows = [...local, ...?server]
     ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
@@ -52,7 +53,7 @@ final myReportsProvider = FutureProvider.autoDispose<MyReports>((ref) async {
 
 // Thank-you notice when a report was applied since the last launch
 final appliedNoticeProvider = FutureProvider<String?>((ref) async {
-  final rows = await ref.watch(reportApiProvider).listMine();
+  final rows = await ref.watch(reportRepositoryProvider).listMine();
   if (rows == null) return null;
   final fresh = await ref.watch(reportStorageProvider).newlyApplied(rows);
   if (fresh.isEmpty) return null;
