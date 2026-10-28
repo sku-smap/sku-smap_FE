@@ -5,8 +5,10 @@ import '../../../../core/widgets/app_toast.dart';
 import '../../../campus/data/campus_directory.dart';
 import '../../../campus/data/campus_models.dart';
 import '../../../campus/state/trip_controller.dart';
+import '../../data/candidate_place.dart';
 import '../../data/search_models.dart';
 import '../../state/search_flow_controller.dart';
+import '../../state/voice_controller.dart';
 import '../search_routes.dart';
 import '../search_tokens.dart';
 import '../widgets/place_picker.dart';
@@ -77,21 +79,26 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
       }
     }
 
-    // Apply what was heard: set places, then guide or ask for the start
-    void onVoiceResult(VoiceIntent intent) {
-      final to = intent.to;
-      if (to == null) return;
+    // Apply the settled place: report location, start, or destination
+    void onVoiceResult(VoiceOutcome outcome) {
+      final place = placeOfCandidate(outcome.place);
       if (_forReport) {
-        SearchRoutes.close(context, to.spot);
+        SearchRoutes.close(context, place);
         return;
       }
-      final from = intent.from?.spot ?? ref.read(tripProvider).from;
-      trip.setTo(to.spot);
-      if (intent.from != null && from != null) trip.setFrom(from);
-      if (intent.avoidStairs) trip.setMode(RouteMode.elevator);
-      final reply = intent.reply;
+      final option = outcome.routeOption;
+      if (option != null) trip.applyRouteOption(option);
+      final reply = outcome.reply;
       if (reply != null) flowController.toast(reply);
-      if (from != null && from.id != to.id) {
+      if (flow.target == PickTarget.from) {
+        chooseFrom(place);
+        return;
+      }
+      final origin = outcome.origin;
+      if (origin != null) trip.setFrom(placeOfCandidate(origin));
+      final from = ref.read(tripProvider).from;
+      trip.setTo(place);
+      if (from != null && from.id != place.id) {
         startRoute();
       } else {
         flowController.pick(PickTarget.from);
@@ -106,6 +113,9 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
           Positioned.fill(
             child: flow.voice
                 ? VoiceView(
+                    target: flow.target == PickTarget.from
+                        ? SearchTarget.origin
+                        : SearchTarget.destination,
                     onClose: () => SearchRoutes.close(context),
                     onResult: onVoiceResult,
                   )
