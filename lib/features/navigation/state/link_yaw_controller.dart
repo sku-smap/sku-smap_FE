@@ -1,10 +1,15 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/network/app_config.dart';
+import '../../../core/network/data_source.dart';
 import '../data/link_yaw_repository.dart';
 import '../data/route_graph.dart';
 
 final linkYawRepositoryProvider = Provider<LinkYawRepository>(
-  (ref) => MockLinkYawRepository(),
+  (ref) => selectDataSource(
+    ref.watch(appConfigProvider),
+    mock: MockLinkYawRepository.new,
+  ),
 );
 
 // Saved arrow directions layered over the bundled ones
