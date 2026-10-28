@@ -1,6 +1,6 @@
 // Mock data ported from smap_test src/data
 
-import 'navigation_models.dart';
+import '../../../navigation/data/navigation_models.dart';
 
 const routeLinks = <String, List<RouteLink>>{
   'road_yudam_front': [

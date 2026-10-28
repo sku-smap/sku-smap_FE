@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
-import '../../../home/data/campus_models.dart';
+import '../../../campus/data/campus_directory.dart';
+import '../../../campus/data/campus_models.dart';
 import '../../../home/data/home_assets.dart';
 import '../../../home/presentation/home_tokens.dart';
 import '../../../home/presentation/widgets/home_segmented.dart';
-import '../../data/mock_location.dart';
-import '../../data/search_models.dart';
 
 class PickMap extends StatelessWidget {
   const PickMap({

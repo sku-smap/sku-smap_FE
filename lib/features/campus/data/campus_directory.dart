@@ -1,0 +1,43 @@
+import 'campus_models.dart';
+import 'mock/campus_buildings_mock.dart';
+import 'mock/nfc_places_mock.dart';
+import 'mock/pano_spots_mock.dart';
+import 'mock/search_places_mock.dart';
+
+final placeById = {for (final p in searchPlaces) p.id: p};
+
+final spotById = {for (final n in panoSpots) n.id: n};
+
+final buildingById = {for (final b in campusBuildings) b.id: b};
+
+// Resolve a shared, NFC, search or 360 spot id into a selectable place
+CampusPlace? resolvePlace(String? id) {
+  if (id == null) return null;
+  final nfc = nfcPlaceNames[id];
+  if (nfc != null) return CampusPlace(id: id, name: nfc);
+  final place = placeById[id];
+  if (place != null) return place.spot;
+  if (id.startsWith('b-')) return buildingById[id.substring(2)]?.main;
+  return spotById[id]?.spot;
+}
+
+// The 360 spot a place id stands for
+String? nodeOf(String? id) => placeById[id]?.node ?? spotById[id]?.id;
+
+// NFC tag name for the place in a launch link
+String? nfcPlaceName(String? id) => nfcPlaceNames[id];
+
+// Nearest 360 spot to a map point (percent) on the same level
+PanoSpot? nearestSpot(double x, double y, [MapLevel level = MapLevel.ground]) {
+  PanoSpot? best;
+  var bestDistance = double.infinity;
+  for (final n in panoSpots) {
+    if (n.level != level || n.flat || n.hidden) continue;
+    final d = (n.x - x) * (n.x - x) + (n.y - y) * (n.y - y);
+    if (d < bestDistance) {
+      bestDistance = d;
+      best = n;
+    }
+  }
+  return best;
+}

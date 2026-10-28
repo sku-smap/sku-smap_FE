@@ -1,6 +1,6 @@
 // Mock data ported from smap_test src/data
 
-import 'search_models.dart';
+import '../campus_models.dart';
 
 const searchPlaces = [
   SearchPlace(

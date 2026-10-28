@@ -1,5 +1,5 @@
-import 'campus_models.dart';
-import 'home_assets.dart';
+import '../../../home/data/home_assets.dart';
+import '../campus_models.dart';
 
 const campusBuildings = [
   CampusBuilding(
@@ -60,7 +60,7 @@ const campusBuildings = [
       CampusPlace(id: 'r-bukak-619', name: '휴게실 (619호)'),
       CampusPlace(id: 'r-bukak-318', name: '전공역량강화 실습실1 (318호)'),
       CampusPlace(id: 'r-bukak-904', name: '휴게실 (904호)'),
-      CampusPlace(id: 'p-bukak-7', name: 'GS25 편의점'),
+      CampusPlace(id: 'r-bukak-954', name: 'GS25 편의점'),
     ],
     roomCount: 113,
   ),
@@ -74,7 +74,7 @@ const campusBuildings = [
     photo: HomeAssets.photoBonkwan,
     floors: ['1F', '2F', '3F', '5F', '6F', '7F', '8F'],
     places: [
-      CampusPlace(id: 'p-bonkwan-0', name: '2115 주차장'),
+      CampusPlace(id: 'f-2115parking', name: '2115 주차장'),
       CampusPlace(id: 'r-bonkwan-301', name: '총장실 (301호)'),
       CampusPlace(id: 'r-bonkwan-302', name: '비서실 (302호)'),
       CampusPlace(id: 'r-bonkwan-303', name: '부총장실 (303호)'),
@@ -143,8 +143,8 @@ const campusBuildings = [
     departments: '토목공학과, 실용음악학과, 미용예술학과, 무용예술학과',
     floors: ['B1', '1F', '2F', '3F', '5F', '6F', '7F'],
     places: [
-      CampusPlace(id: 'p-daeil-0', name: '대일관 야외데크'),
-      CampusPlace(id: 'p-daeil-1', name: '대일관 7층 연습실'),
+      CampusPlace(id: 'f-deck', name: '대일관 야외데크'),
+      CampusPlace(id: 'f-studio', name: '대일관 7층 연습실'),
       CampusPlace(id: 'r-daeil-211', name: '실용음악사무실 (211호)'),
       CampusPlace(id: 'r-daeil-212', name: '실용음악사무실 (212호)'),
       CampusPlace(id: 'r-daeil-603', name: '휴게실 (603호)'),
@@ -188,16 +188,16 @@ const campusBuildings = [
       '12F',
     ],
     places: [
-      CampusPlace(id: 'p-chungwoon-0', name: '식당 (수유리우동 · 노브랜드버거)'),
+      CampusPlace(id: 'f-cafeteria', name: '식당 (수유리우동 · 노브랜드버거)'),
       CampusPlace(id: 'r-chungwoon-101', name: '서점 (101호)'),
       CampusPlace(id: 'r-chungwoon-102', name: '복사실 (102호)'),
       CampusPlace(id: 'r-chungwoon-103', name: '헤어샵 (103호)'),
       CampusPlace(id: 'r-chungwoon-104', name: '피부샵 (104호)'),
       CampusPlace(id: 'r-chungwoon-301', name: '학생과 사무실 (301호)'),
       CampusPlace(id: 'r-chungwoon-302', name: '보건실 (302호)'),
-      CampusPlace(id: 'p-chungwoon-7', name: 'emart24 편의점'),
-      CampusPlace(id: 'p-chungwoon-8', name: '수유리우동 (식당)'),
-      CampusPlace(id: 'p-chungwoon-9', name: '노브랜드버거 (식당)'),
+      CampusPlace(id: 'r-chungwoon-955', name: 'emart24 편의점'),
+      CampusPlace(id: 'r-chungwoon-956', name: '수유리우동 (식당)'),
+      CampusPlace(id: 'r-chungwoon-957', name: '노브랜드버거 (식당)'),
     ],
     roomCount: 76,
   ),
@@ -245,8 +245,8 @@ const campusBuildings = [
     departments: '도시공학과, 나노융합',
     floors: [],
     places: [
-      CampusPlace(id: 'p-eunju2-0', name: '여자기숙사 입구'),
-      CampusPlace(id: 'p-eunju2-1', name: '남자기숙사 입구'),
+      CampusPlace(id: 'f-dorm-w', name: '여자기숙사 입구'),
+      CampusPlace(id: 'f-dorm-m', name: '남자기숙사 입구'),
       CampusPlace(id: 'r-eunju2-522', name: 'MD카페 (522호)'),
     ],
     roomCount: 19,

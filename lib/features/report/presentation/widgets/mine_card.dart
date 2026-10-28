@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../../navigation/data/route_graph.dart';
+import '../../../campus/data/campus_directory.dart';
 import '../../data/report_models.dart';
 import '../report_tokens.dart';
 

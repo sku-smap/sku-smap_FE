@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../../../home/data/campus_models.dart';
-import '../../../navigation/data/route_graph.dart';
+import '../../../campus/data/campus_directory.dart';
+import '../../../campus/data/campus_models.dart';
 import '../../../search/presentation/widgets/pick_map.dart';
 import '../../data/report_models.dart';
 import '../report_tokens.dart';

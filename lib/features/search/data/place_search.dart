@@ -1,6 +1,8 @@
-import 'pano_spots_mock.dart';
+import '../../campus/data/campus_directory.dart';
+import '../../campus/data/campus_models.dart';
+import '../../campus/data/mock/pano_spots_mock.dart';
+import '../../campus/data/mock/search_places_mock.dart';
 import 'search_models.dart';
-import 'search_places_mock.dart';
 import 'search_tasks_mock.dart';
 
 const _popularIds = [
@@ -13,8 +15,6 @@ const _popularIds = [
   'f-parking1',
   'b-hyein',
 ];
-
-final placeById = {for (final p in searchPlaces) p.id: p};
 
 final popularPlaces = searchPlaces
     .where((p) => _popularIds.contains(p.id))

@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
-import '../../../home/data/campus_models.dart';
+import '../../../campus/data/campus_directory.dart';
+import '../../../campus/data/campus_models.dart';
+import '../../../campus/data/mock/campus_floors_mock.dart';
 import '../../../home/data/home_assets.dart';
-import '../../../search/data/search_models.dart';
 import '../../data/navigation_models.dart';
-import '../../data/campus_floors_mock.dart';
 import '../../data/route_graph.dart';
 import '../navigation_tokens.dart';
 import 'glass_box.dart';

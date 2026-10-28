@@ -2,9 +2,10 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../data/mock_speech.dart';
+import '../../campus/data/campus_models.dart';
 import '../data/place_search.dart';
 import '../data/search_models.dart';
+import '../data/speech_recognizer.dart';
 import 'search_flow_controller.dart';
 
 enum VoiceBusy {
@@ -52,7 +53,7 @@ class VoiceController extends Notifier<VoiceState> {
       _autoStop?.cancel();
       _run++;
     });
-    _autoStop = Timer(MockSpeechRecognizer.maxListen, stop);
+    _autoStop = Timer(SpeechRecognizer.maxListen, stop);
     return const VoiceState(listening: true);
   }
 
@@ -60,7 +61,7 @@ class VoiceController extends Notifier<VoiceState> {
   void start() {
     _run++;
     _autoStop?.cancel();
-    _autoStop = Timer(MockSpeechRecognizer.maxListen, stop);
+    _autoStop = Timer(SpeechRecognizer.maxListen, stop);
     state = const VoiceState(listening: true);
   }
 

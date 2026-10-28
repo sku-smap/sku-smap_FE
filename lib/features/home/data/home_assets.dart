@@ -1,4 +1,4 @@
-import 'campus_models.dart';
+import '../../campus/data/campus_models.dart';
 
 abstract final class HomeAssets {
   static const _icons = 'assets/icons/home';

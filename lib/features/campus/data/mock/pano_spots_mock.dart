@@ -1,7 +1,6 @@
 // Mock data ported from smap_test src/data
 
-import '../../home/data/campus_models.dart';
-import 'search_models.dart';
+import '../campus_models.dart';
 
 const panoSpots = [
   PanoSpot(id: 'gate_front', title: '정문 앞', building: 'outdoor', x: 52, y: 93),

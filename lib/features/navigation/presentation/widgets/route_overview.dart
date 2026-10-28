@@ -4,7 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
-import '../../../home/data/campus_models.dart';
+import '../../../campus/data/campus_directory.dart';
+import '../../../campus/data/campus_models.dart';
 import '../../../home/data/home_assets.dart';
 import '../../../home/presentation/widgets/pressable.dart';
 import '../../data/navigation_assets.dart';
