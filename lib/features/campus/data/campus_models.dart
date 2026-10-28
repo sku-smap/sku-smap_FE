@@ -159,8 +159,8 @@ class PanoSpot {
     required this.title,
     required this.building,
     this.floor,
-    required this.x,
-    required this.y,
+    this.x,
+    this.y,
     this.level = MapLevel.ground,
     this.flat = false,
     this.hidden = false,
@@ -173,8 +173,8 @@ class PanoSpot {
   final String title;
   final String building;
   final String? floor;
-  final double x;
-  final double y;
+  final double? x;
+  final double? y;
   final MapLevel level;
   final bool flat;
   final bool hidden;
@@ -184,5 +184,24 @@ class PanoSpot {
 
   bool get outdoor => building == 'outdoor';
 
+  // Spots only the server knows have no map position yet
+  bool get onMap => x != null && y != null;
+
   CampusPlace get spot => CampusPlace(id: id, name: title);
+
+  // Server name, building and floor over the bundled map data for this id
+  PanoSpot withServer(PanoSpot server) => PanoSpot(
+    id: id,
+    title: server.title,
+    building: server.building,
+    floor: server.floor,
+    x: x,
+    y: y,
+    level: level,
+    flat: flat,
+    hidden: hidden,
+    center: center,
+    estimated: estimated,
+    roomList: roomList,
+  );
 }

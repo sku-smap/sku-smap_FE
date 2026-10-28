@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 
 import 'campus_models.dart';
 import 'mock/campus_buildings_mock.dart';
+import 'mock/campus_floors_mock.dart';
 import 'mock/nfc_places_mock.dart';
 import 'mock/pano_spots_mock.dart';
 import 'mock/search_places_mock.dart';
@@ -23,7 +24,23 @@ void resetPlaces() => placeById
   ..clear()
   ..addAll({for (final p in searchPlaces) p.id: p});
 
-final spotById = {for (final n in panoSpots) n.id: n};
+@visibleForTesting
+void resetSpots() => spotById
+  ..clear()
+  ..addAll({for (final n in panoSpots) n.id: n});
+
+// Bundled photo spots until the server list arrives; see [registerSpots]
+final Map<String, PanoSpot> spotById = {for (final n in panoSpots) n.id: n};
+
+// Merge server nodes: known ids keep their map data, new ids join without it
+void registerSpots(Iterable<PanoSpot> spots) {
+  for (final s in spots) {
+    spotById[s.id] = spotById[s.id]?.withServer(s) ?? s;
+  }
+}
+
+// Display name for a building key; server-only buildings use their name
+String buildingNameOf(String key) => buildingNames[key] ?? key;
 
 final buildingById = {for (final b in campusBuildings) b.id: b};
 
@@ -48,9 +65,13 @@ String? nfcPlaceName(String? id) => nfcPlaceNames[id];
 PanoSpot? nearestSpot(double x, double y, [MapLevel level = MapLevel.ground]) {
   PanoSpot? best;
   var bestDistance = double.infinity;
-  for (final n in panoSpots) {
-    if (n.level != level || n.flat || n.hidden) continue;
-    final d = (n.x - x) * (n.x - x) + (n.y - y) * (n.y - y);
+  for (final n in spotById.values) {
+    final nx = n.x;
+    final ny = n.y;
+    if (nx == null || ny == null || n.level != level || n.flat || n.hidden) {
+      continue;
+    }
+    final d = (nx - x) * (nx - x) + (ny - y) * (ny - y);
     if (d < bestDistance) {
       bestDistance = d;
       best = n;

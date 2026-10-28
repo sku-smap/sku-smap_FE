@@ -81,11 +81,14 @@ class _RouteMap extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final nodes = [for (final id in path) ?spotById[id]];
+    final nodes = [
+      for (final id in path)
+        if (spotById[id] case final n? when n.onMap) n,
+    ];
     final under = nodes.where((n) => n.level == MapLevel.underground).length;
     final ground = under <= nodes.length / 2;
     final pts = [
-      for (final n in nodes) Offset(n.x / 100 * _mapW, n.y / 100 * _mapH),
+      for (final n in nodes) Offset(n.x! / 100 * _mapW, n.y! / 100 * _mapH),
     ];
 
     return ClipRect(
