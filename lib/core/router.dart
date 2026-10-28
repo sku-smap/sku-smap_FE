@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../features/explore/presentation/screens/explore_screen.dart';
 import '../features/home/presentation/screens/home_screen.dart';
 import '../features/navigation/presentation/screens/navigation_screen.dart';
 import '../features/search/presentation/screens/search_screen.dart';
@@ -35,7 +36,8 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: AppRoutes.explore,
-        builder: (context, state) => const PlaceholderPage(title: '둘러보기'),
+        builder: (context, state) =>
+            ExploreScreen(query: state.uri.queryParameters),
       ),
       GoRoute(
         path: AppRoutes.report,
