@@ -32,6 +32,13 @@ class MockSearchRepository implements SearchRepository {
     return _resultOf(target, transcript, heard: transcript);
   }
 
+  // Bundled searches have no id, so nothing is ever recorded
+  @override
+  Future<void> select({
+    required int searchId,
+    required String candidateId,
+  }) async {}
+
   SearchResult _resultOf(SearchTarget target, String text, {String? heard}) {
     final intent = parseUtterance(text);
     final to = intent.to;

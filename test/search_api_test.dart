@@ -85,7 +85,7 @@ Map<String, Object?> _response({
   'candidates': candidates ?? [_candidate()],
 };
 
-({ApiSearchRepository repo, _Adapter adapter}) _api(Object data) {
+({ApiSearchRepository repo, _Adapter adapter}) _api(Object? data) {
   final dio = Dio(BaseOptions(baseUrl: 'https://api.test'));
   final adapter = _Adapter({
     'success': true,
@@ -193,6 +193,15 @@ void main() {
       expect(file.value.filename, 'voice.wav');
       expect(file.value.contentType.toString(), 'audio/wav');
       expect(file.value.length, 3);
+    });
+
+    test('후보 선택은 검색 ID 경로에 후보 ID를 PUT으로 보낸다', () async {
+      final (:repo, :adapter) = _api(null);
+      await repo.select(searchId: 12, candidateId: 'place:r-yudam-907');
+      final o = adapter.requests.single;
+      expect(o.method, 'PUT');
+      expect(o.uri.path, '/api/v1/searches/12/selection');
+      expect(o.data, {'candidateId': 'place:r-yudam-907'});
     });
 
     test('오류는 공통 앱 오류로 바뀐다', () async {

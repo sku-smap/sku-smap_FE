@@ -12,4 +12,7 @@ abstract interface class SearchRepository {
     required SearchTarget target,
     required VoiceClip clip,
   });
+
+  // Record which candidate of that search the user settled on
+  Future<void> select({required int searchId, required String candidateId});
 }
