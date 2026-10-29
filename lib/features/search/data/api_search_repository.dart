@@ -48,4 +48,12 @@ class ApiSearchRepository implements SearchRepository {
     sendTimeout: _uploadTimeout,
     decode: (data) => SearchDto.resultFrom(data, target),
   );
+
+  @override
+  Future<void> select({required int searchId, required String candidateId}) =>
+      _api.put(
+        '$_path/$searchId/selection',
+        body: {'candidateId': candidateId},
+        decode: ignoreData,
+      );
 }
