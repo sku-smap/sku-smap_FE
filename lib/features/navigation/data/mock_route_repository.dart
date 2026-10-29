@@ -20,9 +20,11 @@ class MockRouteRepository implements RouteRepository {
     final path = findRoute(
       from,
       to,
-      mode: option == RouteOption.comfortable
-          ? RouteMode.elevator
-          : RouteMode.outdoor,
+      mode: switch (option) {
+        RouteOption.comfortable => RouteMode.comfortable,
+        RouteOption.shortest => RouteMode.shortest,
+        _ => RouteMode.outdoor,
+      },
       indoor: option == RouteOption.indoorUndergroundFirst,
       blocked: blocked(),
     );

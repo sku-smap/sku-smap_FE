@@ -31,8 +31,9 @@ Future<void> _pumpHome(
   WidgetTester tester, [
   String initial = '/',
   List<Override> overrides = const [],
+  double width = 390,
 ]) async {
-  tester.view.physicalSize = const Size(390, 844);
+  tester.view.physicalSize = Size(width, 844);
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.reset);
   final router = _router(initial);
@@ -93,7 +94,9 @@ void main() {
   testWidgets('이동 방식·바꾸기·길찾기가 동작한다 (H-06~H-08)', (tester) async {
     await _pumpHome(tester, '/?from=bus_stop&to=b-hyein');
 
-    await _tap(tester, find.text('엘리베이터 우선'));
+    expect(find.text('야외경로'), findsOneWidget);
+    expect(find.text('최단거리'), findsOneWidget);
+    await _tap(tester, find.text('편한길'));
     await _tap(tester, find.bySemanticsLabel('출발지·도착지 바꾸기'));
 
     final from = tester.getTopLeft(find.text('혜인관').first).dy;
@@ -103,7 +106,7 @@ void main() {
     await _tap(tester, find.text('길찾기'));
     expect(
       _pushed(tester),
-      '/navigation?from=b-hyein&to=bus_stop&mode=elevator',
+      '/navigation?from=b-hyein&to=bus_stop&mode=comfortable',
     );
   });
 
@@ -113,10 +116,10 @@ void main() {
     expect(find.text('🚧 지금 못 가는 곳 2곳'), findsOneWidget);
     expect(find.text('본관 오르막 2갈래 · 엘리베이터 고장 · 10/12까지'), findsOneWidget);
     expect(find.text('지금 캠퍼스에 비가 와요'), findsOneWidget);
-    expect(find.text('지붕 있는 실내·지하 길로 먼저 안내해요'), findsOneWidget);
+    expect(find.text('켜면 비를 덜 맞는 길로 안내해요'), findsOneWidget);
 
     await _tap(tester, find.text('지금 캠퍼스에 비가 와요'));
-    expect(find.text('켜면 비를 덜 맞는 길로 안내해요'), findsOneWidget);
+    expect(find.text('지붕 있는 실내·지하 길로 먼저 안내해요'), findsOneWidget);
   });
 
   testWidgets('편의시설 필터와 지상·지하 전환 (H-10·H-16)', (tester) async {
@@ -214,6 +217,15 @@ void main() {
     expect(find.text('총장실 (301호)'), findsNothing);
     expect(find.text('부총장실 (303호)'), findsOneWidget);
   });
+
+  for (final width in [375.0, 430.0]) {
+    testWidgets('이동 방식 세 가지와 길찾기가 ${width.toInt()} 폭에 넘치지 않는다', (tester) async {
+      await _pumpHome(tester, '/', const [], width);
+      expect(tester.takeException(), isNull);
+      expect(find.text('편한길'), findsOneWidget);
+      expect(find.text('길찾기'), findsOneWidget);
+    });
+  }
 }
 
 class _Places implements PlaceRepository {

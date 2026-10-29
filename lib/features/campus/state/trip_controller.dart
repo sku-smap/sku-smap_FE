@@ -2,11 +2,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../data/campus_directory.dart';
 import '../data/campus_models.dart';
-import 'campus_status_providers.dart';
 import 'launch_provider.dart';
 import 'nfc_link_provider.dart';
 import 'node_providers.dart';
 import 'place_providers.dart';
+import 'recent_places_provider.dart';
 
 // Start, destination and route options shared by every screen
 class TripState {
@@ -46,18 +46,9 @@ class TripState {
 }
 
 class TripController extends Notifier<TripState> {
-  var _indoorTouched = false;
-
   @override
   TripState build() {
     final launch = ref.read(launchEntryProvider);
-    // Rain turns indoor routing on until the user changes it
-    ref.listen(campusWeatherProvider, (_, next) {
-      final wet = next.value?.isWet;
-      if (wet != null && !_indoorTouched) {
-        state = state.copyWith(indoor: wet);
-      }
-    });
     // The latest tag wins over the launch link
     var wantFrom = ref.read(nfcLinkProvider)?.id ?? launch.from;
     // Link ids only the server knows resolve once places or nodes arrive
@@ -78,16 +69,16 @@ class TripController extends Notifier<TripState> {
       final place = resolvePlace(tap.id);
       if (place != null) state = state.copyWith(from: () => place);
     });
-    return TripState(
-      from: resolvePlace(wantFrom),
-      to: resolvePlace(launch.to),
-      indoor: ref.read(campusWeatherProvider).value?.isWet ?? false,
-    );
+    return TripState(from: resolvePlace(wantFrom), to: resolvePlace(launch.to));
   }
 
   void setFrom(CampusPlace place) => state = state.copyWith(from: () => place);
 
-  void setTo(CampusPlace place) => state = state.copyWith(to: () => place);
+  // Every destination pick is remembered for the start list
+  void setTo(CampusPlace place) {
+    state = state.copyWith(to: () => place);
+    ref.read(recentPlacesProvider.notifier).add(place.id);
+  }
 
   void swap() =>
       state = state.copyWith(from: () => state.to, to: () => state.from);
@@ -96,22 +87,21 @@ class TripController extends Notifier<TripState> {
   void setMode(RouteMode mode) =>
       state = state.copyWith(mode: mode, routeOption: () => null);
 
-  // Shortest has no app option, so only the stored value changes
+  // Indoor-first turns the toggle on and keeps the chosen mode
   void applyRouteOption(RouteOption option) {
-    if (option == RouteOption.indoorUndergroundFirst) _indoorTouched = true;
     state = state.copyWith(
       routeOption: () => option,
       mode: switch (option) {
-        RouteOption.comfortable => RouteMode.elevator,
+        RouteOption.comfortable => RouteMode.comfortable,
         RouteOption.outdoorFirst => RouteMode.outdoor,
-        _ => null,
+        RouteOption.shortest => RouteMode.shortest,
+        RouteOption.indoorUndergroundFirst => null,
       },
       indoor: option == RouteOption.indoorUndergroundFirst ? true : null,
     );
   }
 
   void toggleIndoor() {
-    _indoorTouched = true;
     state = state.copyWith(indoor: !state.indoor, routeOption: () => null);
   }
 }

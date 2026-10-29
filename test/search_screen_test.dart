@@ -279,7 +279,7 @@ void main() {
     );
   });
 
-  testWidgets('계단 말고 라고 하면 엘리베이터 우선으로 안내한다', (tester) async {
+  testWidgets('계단 말고 라고 하면 편한길로 안내한다', (tester) async {
     final container = await _pumpSearch(tester, '/search?mode=voice');
     container
         .read(tripProvider.notifier)
@@ -287,8 +287,11 @@ void main() {
 
     await _tap(tester, find.text('계단 말고 혜인관 가는 길'));
     await _wait(tester, 700);
-    expect(container.read(tripProvider).mode, RouteMode.elevator);
-    expect(_pushed(tester), '/navigation?from=f-bus&to=b-hyein&mode=elevator');
+    expect(container.read(tripProvider).mode, RouteMode.comfortable);
+    expect(
+      _pushed(tester),
+      '/navigation?from=f-bus&to=b-hyein&mode=comfortable',
+    );
   });
 
   testWidgets('검색창 마이크로 음성 화면을 연다', (tester) async {
@@ -308,7 +311,7 @@ void main() {
     expect(find.text('home'), findsOneWidget);
   });
 
-  testWidgets('후보를 누르면 확정 중을 보이고 기록이 끝나면 길안내로 간다', (tester) async {
+  testWidgets('후보를 누르면 기록을 기다리지 않고 길안내로 간다', (tester) async {
     final repo = _SlowSelectRepo();
     final container = await _pumpSearch(
       tester,
@@ -321,10 +324,6 @@ void main() {
 
     await _tap(tester, find.text('유담관이 어디에요?'));
     await _tap(tester, find.text('문예관'));
-    expect(find.text('문예관 · 확정 중…'), findsOneWidget);
-    expect(_pushed(tester), isNull);
-
-    repo.selection.complete();
     await _wait(tester, 300);
     expect(_pushed(tester), '/navigation?from=f-bus&to=b-moonye&mode=outdoor');
   });

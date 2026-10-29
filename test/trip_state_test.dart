@@ -56,26 +56,23 @@ void main() {
     trip
       ..setFrom(const CampusPlace(id: 'bus_stop', name: '버스정류장'))
       ..setTo(const CampusPlace(id: 'b-hyein', name: '혜인관'))
-      ..setMode(RouteMode.elevator)
+      ..setMode(RouteMode.comfortable)
       ..swap();
     final s = c.read(tripProvider);
     expect(s.from?.id, 'b-hyein');
     expect(s.to?.id, 'bus_stop');
-    expect(s.mode, RouteMode.elevator);
+    expect(s.mode, RouteMode.comfortable);
     expect(s.canRoute, isTrue);
   });
 
-  test('비가 오면 실내 우선이 켜지고, 직접 끄면 그대로 둔다', () async {
+  test('비가 와도 실내 우선은 직접 켤 때만 켜진다', () async {
     final c = _container(const {'weather': 'rain'});
-    expect(c.read(tripProvider).indoor, isFalse);
+    c.read(tripProvider);
     await c.read(campusWeatherProvider.future);
-    expect(c.read(tripProvider).indoor, isTrue);
+    expect(c.read(tripProvider).indoor, isFalse);
 
     c.read(tripProvider.notifier).toggleIndoor();
-    expect(c.read(tripProvider).indoor, isFalse);
-    c.invalidate(campusWeatherProvider);
-    await c.read(campusWeatherProvider.future);
-    expect(c.read(tripProvider).indoor, isFalse);
+    expect(c.read(tripProvider).indoor, isTrue);
   });
 
   test('맑은 날은 실내 우선이 꺼져 있다', () async {

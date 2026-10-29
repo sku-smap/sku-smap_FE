@@ -129,7 +129,7 @@ void main() {
       final lift = findRoute(
         'bus_stop',
         'bukak_b1_elev',
-        mode: RouteMode.elevator,
+        mode: RouteMode.comfortable,
       )!;
       expect(usesStairs(lift), isFalse);
       expect(walk, isNotEmpty);

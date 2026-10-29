@@ -78,8 +78,9 @@ class RouteCard extends StatelessWidget {
               children: [
                 HomeSegmented<RouteMode>(
                   options: const [
-                    (RouteMode.outdoor, '야외 경로 우선'),
-                    (RouteMode.elevator, '엘리베이터 우선'),
+                    (RouteMode.outdoor, '야외경로'),
+                    (RouteMode.comfortable, '편한길'),
+                    (RouteMode.shortest, '최단거리'),
                   ],
                   selected: trip.mode,
                   onChanged: onMode,
@@ -273,7 +274,7 @@ class _IndoorToggle extends StatelessWidget {
         ? '지붕 있는 실내·지하 길로 먼저 안내해요'
         : wet != null
         ? '켜면 비를 덜 맞는 길로 안내해요'
-        : '비 오는 날엔 자동으로 켜져요';
+        : '비 오는 날에 사용해보세요!';
 
     return Semantics(
       toggled: on,
