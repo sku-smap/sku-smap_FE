@@ -94,13 +94,23 @@ class RouteEnd {
 }
 
 class ActiveRoute {
-  const ActiveRoute({required this.from, required this.to, required this.path});
+  const ActiveRoute({
+    required this.from,
+    required this.to,
+    required this.path,
+    this.legs = const [],
+  });
 
   final RouteEnd from;
   final RouteEnd to;
   final List<String> path;
 
+  // legs[i] goes from path[i] to path[i + 1]
+  final List<RouteLink> legs;
+
   int get last => path.length - 1;
+
+  RouteLink? legAt(int i) => i >= 0 && i < legs.length ? legs[i] : null;
 }
 
 class RouteStats {

@@ -156,11 +156,11 @@ bool usesStairs(List<String> path) =>
 String placeLabel(PanoSpot n) =>
     [if (!n.outdoor) buildingNameOf(n.building), ?n.floor].join(' · ');
 
-// Guidance sentence for one leg (a → b)
-String instruction(String a, String b) {
+// Guidance sentence for one leg (a → b); the route's own leg wins
+String instruction(String a, String b, [RouteLink? leg]) {
   final to = spotById[b]!;
   final from = spotById[a]!;
-  final l = edgeBetween(a, b);
+  final l = leg ?? edgeBetween(a, b);
   final floor = to.floor ?? '';
   if (l == null && from.building == to.building && from.floor != to.floor) {
     return '엘리베이터를 타고 $floor에서 내리세요';
@@ -221,7 +221,7 @@ const _elevatorSec = 60;
 const _stairsSec = 25;
 
 // Rough distance and time from map coordinates
-RouteStats routeStats(List<String> path) {
+RouteStats routeStats(List<String> path, [List<RouteLink> legs = const []]) {
   var meters = 0.0;
   var extraSec = 0;
   var elevators = 0;
@@ -229,7 +229,9 @@ RouteStats routeStats(List<String> path) {
   for (var i = 1; i < path.length; i++) {
     final a = spotById[path[i - 1]]!;
     final b = spotById[path[i]]!;
-    final via = edgeBetween(a.id, b.id)?.via;
+    final via = i <= legs.length
+        ? legs[i - 1].via
+        : edgeBetween(a.id, b.id)?.via;
     if (via == Via.elevator || (via == null && a.floor != b.floor)) {
       elevators++;
       extraSec += _elevatorSec;
