@@ -11,6 +11,7 @@ import 'package:smap/features/campus/data/api_campus_map_repository.dart';
 import 'package:smap/features/campus/data/campus_directory.dart';
 import 'package:smap/features/campus/data/campus_map.dart';
 import 'package:smap/features/campus/data/campus_map_repository.dart';
+import 'package:smap/features/campus/data/campus_models.dart';
 import 'package:smap/features/campus/data/dto/campus_map_dto.dart';
 import 'package:smap/features/campus/state/node_providers.dart';
 import 'package:smap/features/navigation/data/navigation_models.dart';
@@ -75,6 +76,8 @@ final _map = {
           'placeId': 'r-ej-201',
           'name': '은주1관 201호',
           'arriveNodeId': 'EJ1_02_E',
+          'kind': null,
+          'aliases': ['201호', '은주1관 201'],
         },
       ],
     ),
@@ -92,12 +95,16 @@ final _map = {
 };
 
 class _Stub implements CampusMapRepository {
-  const _Stub(this.map);
+  _Stub(this.map);
 
-  final CampusMap map;
+  CampusMap map;
+  var loads = 0;
 
   @override
-  Future<CampusMap> load() async => map;
+  Future<CampusMap> load() async {
+    loads++;
+    return map;
+  }
 }
 
 void main() {
@@ -116,6 +123,7 @@ void main() {
       expect(map.spots.last.imageUrl, isNull);
       expect(map.places.single.id, 'r-ej-201');
       expect(map.places.single.node, 'EJ1_02_E');
+      expect(map.places.single.aliases, ['201호', '은주1관 201']);
     });
 
     test('양쪽 지점이 응답에 있는 연결만 남기고 이동 방식을 바꾼다', () {
@@ -219,6 +227,57 @@ void main() {
       final links = linksOf('gate_front');
       expect(links, hasLength(before + 1));
       expect(links.where((l) => l.to == 'parking_3way').single.via, Via.walk);
+    });
+
+    test('지도를 다시 받아 사진 URL·장소를 바꾸고 화면 상태는 그대로 둔다', () async {
+      final stub = _Stub(CampusMapDto.fromJson(_map));
+      final c = ProviderContainer(
+        overrides: [campusMapRepositoryProvider.overrideWithValue(stub)],
+      );
+      addTearDown(c.dispose);
+      final first = await c.read(campusMapProvider.future);
+
+      stub.map = CampusMap(
+        spots: [spotById['gate_front']!.withPhoto('https://cdn.test/new.jpg')],
+        links: const [],
+        places: const [
+          SearchPlace(
+            id: 'r-new-1',
+            name: '새 장소',
+            kind: PlaceKind.room,
+            node: 'gate_front',
+          ),
+        ],
+      );
+      await c.read(campusMapRefreshProvider)();
+      expect(spotById['gate_front']!.imageUrl, 'https://cdn.test/new.jpg');
+      expect(nodeOf('r-new-1'), 'gate_front');
+      expect(c.read(campusMapProvider).value, same(first));
+    });
+
+    testWidgets('API 모드에서는 4분 30초마다 화면 뒤에서 다시 받는다', (tester) async {
+      final stub = _Stub(CampusMapDto.fromJson(_map));
+      final c = ProviderContainer(
+        overrides: [
+          appConfigProvider.overrideWithValue(
+            const AppConfig(
+              env: AppEnv.dev,
+              baseUrl: 'https://x',
+              useMock: false,
+            ),
+          ),
+          campusMapRepositoryProvider.overrideWithValue(stub),
+        ],
+      );
+      c.listen(campusMapProvider, (_, _) {});
+      await tester.pump();
+      expect(stub.loads, 1);
+
+      await tester.pump(campusMapRefresh);
+      await tester.pump(campusMapRefresh);
+      expect(stub.loads, 3);
+      expect(c.read(campusMapProvider).hasValue, isTrue);
+      c.dispose();
     });
 
     test('빈 지도는 오류로 보고 재시도할 수 있다', () async {

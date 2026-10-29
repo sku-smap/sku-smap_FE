@@ -27,15 +27,16 @@ typedef NavigationEntry = ({
   RouteOption? option,
 });
 
-// The route API takes one option: the searched one, else elevator over
+// The route API takes one option: the searched one, else a picked mode over
 // indoor since stairs can rule a way out entirely
 RouteOption routeOptionOf(NavigationEntry e) =>
     e.option ??
-    (e.mode == RouteMode.elevator
-        ? RouteOption.comfortable
-        : e.indoor
-        ? RouteOption.indoorUndergroundFirst
-        : RouteOption.outdoorFirst);
+    switch (e.mode) {
+      RouteMode.comfortable => RouteOption.comfortable,
+      RouteMode.shortest => RouteOption.shortest,
+      RouteMode.outdoor when e.indoor => RouteOption.indoorUndergroundFirst,
+      RouteMode.outdoor => RouteOption.outdoorFirst,
+    };
 
 class NavigationState {
   const NavigationState({
@@ -107,7 +108,6 @@ class NavigationController extends Notifier<NavigationState>
 
   final NavigationEntry entry;
   Set<String> _blocked = const {};
-  var _wet = false;
   var _run = 0;
   RouteEnd? _from;
   RouteEnd? _to;
@@ -124,16 +124,14 @@ class NavigationController extends Notifier<NavigationState>
       _run++;
       voice.stop();
     });
-    // Route once spots, places, closures and weather are known
+    // Route once spots, places and closures are known
     final nodes = ref.watch(nodeCatalogProvider);
     final places = ref.watch(placeCatalogProvider);
     final closures = ref.watch(campusClosuresProvider);
-    final weather = ref.watch(campusWeatherProvider);
-    if ([nodes, places, closures, weather].any((v) => v.isLoading)) {
+    if ([nodes, places, closures].any((v) => v.isLoading)) {
       return const NavigationState(loading: true);
     }
     _blocked = {for (final c in closures.value ?? const <Closure>[]) c.node};
-    _wet = weather.value?.isWet ?? false;
     _from = routeEndFor(entry.from);
     _to = routeEndFor(entry.to);
     if (_from == null || _to == null) {
@@ -217,9 +215,6 @@ class NavigationController extends Notifier<NavigationState>
   // The server cannot avoid closures yet, so a closed spot only warns
   String? _notice(ActiveRoute route) {
     if (route.path.any(_blocked.contains)) return closedOnRoute;
-    if (option == RouteOption.indoorUndergroundFirst && _wet) {
-      return '비가 와서 실내·지하 길로 먼저 안내해요';
-    }
     if (option == RouteOption.comfortable &&
         route.legs.any((l) => l.via == Via.stairs)) {
       return '엘리베이터로만 가는 길이 없어서 계단이 조금 포함돼요';

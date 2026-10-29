@@ -90,7 +90,8 @@ bool _outdoorLeg(String a, String b) =>
 bool _indoorLeg(String a, String b) =>
     spotById[a]?.outdoor != true && spotById[b]?.outdoor != true;
 
-// Dijkstra; rain prefers covered legs, elevator mode avoids stairs
+// Dijkstra; indoor prefers covered legs, comfortable avoids stairs and
+// shortest counts every link as one step like the server
 List<String>? findRoute(
   String from,
   String to, {
@@ -124,10 +125,12 @@ List<String>? findRoute(
           : (mode == RouteMode.outdoor && _indoorLeg(cur, l.to)
                 ? _indoorPenalty
                 : 1.0);
-      final stairs = mode == RouteMode.elevator && l.via == Via.stairs
+      final stairs = mode == RouteMode.comfortable && l.via == Via.stairs
           ? _stairsPenalty
           : 1.0;
-      final nd = best + l.via.cost * k * stairs;
+      final nd = mode == RouteMode.shortest
+          ? best + 1
+          : best + l.via.cost * k * stairs;
       if (nd < (dist[l.to] ?? double.infinity)) {
         dist[l.to] = nd;
         prev[l.to] = cur;

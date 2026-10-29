@@ -48,10 +48,10 @@ Map<String, Object?> _place({
   String? name = '테스트실 (101호)',
   String? kind = 'room',
   String? arriveNodeId = 'gate_front',
-  String? aliases,
+  Object? aliases = const <String>[],
   String? sub,
   String? building = '유담관',
-  String? floorLabel = '1',
+  String? floorLabel = '1층',
   String? roomNo = '101',
 }) => {
   'placeId': placeId,
@@ -101,8 +101,9 @@ void main() {
 
   group('장소 DTO 매핑', () {
     test('서버 필드를 앱 장소로 바꾼다', () {
-      final p = PlaceDto.fromJson(_place(aliases: '테스트, 실습실 ,,', sub: '유담관 1층'))
-          .toModel()!;
+      final p = PlaceDto.fromJson(
+        _place(aliases: ['테스트', ' 실습실 ', '', '테스트'], sub: '유담관 1층'),
+      ).toModel()!;
       expect(p.id, 'r-test-101');
       expect(p.name, '테스트실 (101호)');
       expect(p.kind, PlaceKind.room);
@@ -111,13 +112,27 @@ void main() {
       expect(p.aliases, ['테스트', '실습실']);
     });
 
+    test('예전 문자열 별명은 | 나 , 로 나누고 없으면 빈 목록이다', () {
+      expect(
+        PlaceDto.fromJson(_place(aliases: '학식|밥집, 식당')).toModel()!.aliases,
+        ['학식', '밥집', '식당'],
+      );
+      expect(PlaceDto.fromJson(_place(aliases: null)).toModel()!.aliases, []);
+    });
+
     test('sub가 없으면 건물·층·호수로 채운다', () {
       expect(PlaceDto.fromJson(_place()).toModel()!.sub, '유담관 1층 101호');
       expect(
-        PlaceDto.fromJson(_place(roomNo: null, floorLabel: 'B1'))
+        PlaceDto.fromJson(_place(roomNo: null, floorLabel: 'B1층'))
             .toModel()!
             .sub,
-        '유담관 B1층',
+        '유담관 B1',
+      );
+      expect(
+        PlaceDto.fromJson(_place(floorLabel: '2', roomNo: '202호'))
+            .toModel()!
+            .sub,
+        '유담관 2층 202호',
       );
       expect(
         PlaceDto.fromJson(

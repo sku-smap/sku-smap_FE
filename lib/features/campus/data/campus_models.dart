@@ -1,6 +1,6 @@
 enum MapLevel { ground, underground }
 
-enum RouteMode { outdoor, elevator }
+enum RouteMode { outdoor, comfortable, shortest }
 
 // Route preference read from a search sentence; passed on to the route API
 enum RouteOption { outdoorFirst, comfortable, shortest, indoorUndergroundFirst }
@@ -210,7 +210,8 @@ class PanoSpot {
     imageUrl: url,
   );
 
-  // Server name, building, floor and photo over the bundled map data
+  // Server name, building, floor and photo over the bundled map data; a
+  // server photo brings its own photo type
   PanoSpot withServer(PanoSpot server) => PanoSpot(
     id: id,
     title: server.title,
@@ -219,7 +220,7 @@ class PanoSpot {
     x: x,
     y: y,
     level: level,
-    flat: flat,
+    flat: server.imageUrl != null ? server.flat : flat,
     hidden: hidden,
     center: center,
     estimated: estimated,

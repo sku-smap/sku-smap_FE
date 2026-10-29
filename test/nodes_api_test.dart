@@ -8,6 +8,7 @@ import 'package:smap/core/network/app_exception.dart';
 import 'package:smap/features/campus/data/api_node_repository.dart';
 import 'package:smap/features/campus/data/campus_directory.dart';
 import 'package:smap/features/campus/data/campus_models.dart';
+import 'package:smap/features/campus/data/dto/campus_map_dto.dart';
 import 'package:smap/features/campus/data/dto/node_dto.dart';
 import 'package:smap/features/navigation/data/route_graph.dart';
 import 'package:smap/features/search/data/place_search.dart';
@@ -41,11 +42,13 @@ class _Adapter implements HttpClientAdapter {
 
 Map<String, Object?> _node({
   String? nodeId = 'EJ1_02_E',
+  String? buildingId,
   String? building = '은주1관',
-  String? floorLabel = '2',
+  String? floorLabel = '2층',
   String? title = '은주1관 2층 동쪽',
 }) => {
   'nodeId': nodeId,
+  'buildingId': buildingId,
   'building': building,
   'floorLabel': floorLabel,
   'title': title,
@@ -84,6 +87,47 @@ void main() {
       final under = _spot(_node(floorLabel: 'B1'));
       expect(under.floor, 'B1');
       expect(under.level, MapLevel.underground);
+    });
+
+    test('고정 건물 ID를 먼저 쓰고 야외 지하·지상·연결계단을 구분한다', () {
+      expect(
+        _spot(_node(buildingId: 'BON', building: '다른 이름')).building,
+        'bonkwan',
+      );
+      final under = _spot(
+        _node(
+          buildingId: 'OUTDOOR_UNDERGROUND',
+          building: '야외',
+          floorLabel: '지하',
+        ),
+      );
+      expect(under.outdoor, isTrue);
+      expect(under.floor, isNull);
+      expect(under.level, MapLevel.underground);
+      final ground = _spot(
+        _node(buildingId: 'OUTDOOR_GROUND', building: '야외', floorLabel: '지상'),
+      );
+      expect((ground.floor, ground.level), (null, MapLevel.ground));
+      expect(_spot(_node(floorLabel: 'B1층')).floor, 'B1');
+      expect(_spot(_node(floorLabel: '연결계단')).floor, '연결계단');
+      expect(_spot(_node(floorLabel: '3')).floor, '3층');
+    });
+
+    test('서버 사진 유형이 앱의 일반 사진 표시보다 우선한다', () {
+      final flatId = spotById.values.firstWhere((s) => s.flat).id;
+      expect(
+        _spot({..._node(nodeId: flatId), 'photoType': 'PANORAMA'}).flat,
+        isFalse,
+      );
+      expect(_spot({..._node(), 'photoType': 'NORMAL'}).flat, isTrue);
+      registerSpots([
+        CampusMapDto.spotFrom({
+          ..._node(nodeId: flatId),
+          'photoType': 'PANORAMA',
+          'imageUrl': 'https://cdn.test/p.jpg',
+        })!,
+      ]);
+      expect(spotById[flatId]!.flat, isFalse);
     });
 
     test('이름표에 없는 건물은 이름 그대로 별도 건물로 둔다', () {

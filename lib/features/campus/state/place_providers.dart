@@ -8,6 +8,7 @@ import '../data/campus_directory.dart';
 import '../data/campus_models.dart';
 import '../data/mock/mock_place_repository.dart';
 import '../data/place_repository.dart';
+import 'recent_places_provider.dart';
 
 final placeRepositoryProvider = Provider<PlaceRepository>(
   (ref) => selectDataSource(
@@ -25,7 +26,7 @@ final placeCatalogProvider = FutureProvider<List<SearchPlace>>((ref) async {
   return places;
 }, retry: (_, _) => null);
 
-// Search start list; the server has no popular flag yet
+// Default start list; the server has no popular flag yet
 const popularPlaceIds = [
   'f-bus',
   'b-bonkwan',
@@ -37,9 +38,15 @@ const popularPlaceIds = [
   'b-hyein',
 ];
 
+// Recent destinations first, then the defaults fill the remaining rows;
+// ids the server no longer has drop out
 final popularPlacesProvider = Provider<AsyncValue<List<SearchPlace>>>((ref) {
+  final recent = ref.watch(recentPlacesProvider);
   return ref.watch(placeCatalogProvider).whenData((places) {
     final byId = {for (final p in places) p.id: p};
-    return [for (final id in popularPlaceIds) ?byId[id]];
+    final ids = {...recent, ...popularPlaceIds};
+    return [for (final id in ids) ?byId[id]]
+        .take(popularPlaceIds.length)
+        .toList();
   });
 });

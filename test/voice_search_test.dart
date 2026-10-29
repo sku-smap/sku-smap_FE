@@ -235,22 +235,15 @@ void main() {
       await tester.pump();
     }
 
-    testWidgets('고른 후보를 검색 ID와 함께 기록한 뒤 넘긴다', (tester) async {
+    testWidgets('고른 후보는 기록을 기다리지 않고 바로 넘긴다', (tester) async {
       setUpWith(_Recorder());
       await tester.pump();
       await showTwo(tester);
-      final wait = Completer<void>();
-      repo.onSelect = (_, _) => wait.future;
+      repo.onSelect = (_, _) => Completer<void>().future;
 
-      unawaited(voice().choose(read().candidates!.first));
-      expect(read().confirming, 'place:a');
-      expect(read().result, isNull);
-      expect(repo.selected, ['7:place:a']);
-
-      wait.complete();
-      await tester.pump();
+      await voice().choose(read().candidates!.first);
       expect(read().result!.place.name, '학생식당');
-      expect(read().confirming, isNull);
+      expect(repo.selected, ['7:place:a']);
     });
 
     testWidgets('자동으로 고른 후보도 기록한다', (tester) async {
@@ -265,42 +258,33 @@ void main() {
       expect(read().result, isNotNull);
     });
 
-    testWidgets('확정 중에는 다른 후보를 고를 수 없다', (tester) async {
+    testWidgets('정한 뒤에는 다른 후보를 다시 고르지 않는다', (tester) async {
       setUpWith(_Recorder());
       await tester.pump();
       await showTwo(tester);
-      final wait = Completer<void>();
-      repo.onSelect = (_, _) => wait.future;
+      final candidates = read().candidates!;
 
-      unawaited(voice().choose(read().candidates!.first));
-      unawaited(voice().choose(read().candidates!.last));
+      await voice().choose(candidates.first);
+      await voice().choose(candidates.last);
       expect(repo.selected, ['7:place:a']);
-      wait.complete();
-      await tester.pump();
+      expect(read().result!.place.name, '학생식당');
     });
 
-    testWidgets('이전 검색의 후보는 고를 수 없고 새 검색 뒤 늦은 확정은 버린다', (tester) async {
+    testWidgets('이전 검색의 후보는 고를 수 없다', (tester) async {
       setUpWith(_Recorder());
       await tester.pump();
       await showTwo(tester);
       final old = read().candidates!.first;
-      final wait = Completer<void>();
-      repo.onSelect = (_, _) => wait.future;
 
-      unawaited(voice().choose(old));
       unawaited(voice().start());
       await tester.pump();
-      wait.complete();
-      await tester.pump();
-      expect(read().result, isNull);
-      expect(read().listening, isTrue);
-
       await voice().choose(old);
-      expect(repo.selected, ['7:place:a']);
+      expect(read().result, isNull);
+      expect(repo.selected, isEmpty);
       c.dispose();
     });
 
-    testWidgets('만료·없는 후보면 후보를 비우고 다시 검색하게 한다', (tester) async {
+    testWidgets('기록이 실패해도 오류 없이 넘어간다', (tester) async {
       setUpWith(_Recorder());
       await tester.pump();
       await showTwo(tester);
@@ -310,32 +294,10 @@ void main() {
         statusCode: 404,
       );
 
-      await voice().choose(read().candidates!.first);
-      expect(read().error, VoiceController.expired);
-      expect(read().candidates, isNull);
-
-      unawaited(voice().retry());
-      await tester.pump();
-      expect(repo.asked, ['text:destination:학생', 'text:destination:학생']);
-      repo.pending.last.complete(_result([]));
-      await tester.pump();
-    });
-
-    testWidgets('네트워크 오류면 후보를 유지하고 다시 시도한다', (tester) async {
-      setUpWith(_Recorder());
-      await tester.pump();
-      await showTwo(tester);
-      repo.onSelect = (_, _) async => throw const NetworkException();
-
       await voice().choose(read().candidates!.last);
-      expect(read().confirmError, '인터넷 연결을 확인해 주세요.');
-      expect(read().candidates, hasLength(2));
-      expect(read().result, isNull);
-
-      repo.onSelect = (_, _) async {};
-      await voice().retryConfirm();
+      await tester.pump();
       expect(read().result!.place.name, '학생회관');
-      expect(repo.selected, ['7:place:b', '7:place:b']);
+      expect(read().error, isNull);
     });
 
     testWidgets('검색 ID가 없으면 기록 없이 확정한다', (tester) async {

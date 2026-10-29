@@ -98,7 +98,6 @@ class VoiceView extends ConsumerWidget {
                           const SizedBox(height: 22),
                           _ChipWrap(
                             caption:
-                                state.confirmError ??
                                 state.message ??
                                 (candidates.isNotEmpty
                                     ? '혹시 이곳인가요?'
@@ -107,19 +106,9 @@ class VoiceView extends ConsumerWidget {
                             children: [
                               for (final p in candidates)
                                 _Chip(
-                                  label: state.confirming == p.id
-                                      ? '${p.name} · 확정 중…'
-                                      : p.name,
+                                  label: p.name,
                                   light: true,
-                                  onTap: state.confirming != null
-                                      ? null
-                                      : () => controller.choose(p),
-                                ),
-                              if (state.confirmError != null)
-                                _Chip(
-                                  label: '다시 시도',
-                                  light: true,
-                                  onTap: controller.retryConfirm,
+                                  onTap: () => controller.choose(p),
                                 ),
                             ],
                           ),

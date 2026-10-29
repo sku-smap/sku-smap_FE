@@ -277,11 +277,15 @@ void main() {
         RouteOption.indoorUndergroundFirst,
       );
       expect(
-        routeOptionOf(_entry(mode: RouteMode.elevator, indoor: true)),
+        routeOptionOf(_entry(mode: RouteMode.comfortable, indoor: true)),
         RouteOption.comfortable,
       );
       expect(
         routeOptionOf(_entry(indoor: true, option: RouteOption.shortest)),
+        RouteOption.shortest,
+      );
+      expect(
+        routeOptionOf(_entry(mode: RouteMode.shortest, indoor: true)),
         RouteOption.shortest,
       );
     });
@@ -324,7 +328,7 @@ void main() {
     }
 
     test('서버 경로로 단계·사진·화살표·안내 문장을 만든다', () async {
-      final entry = _entry(mode: RouteMode.elevator);
+      final entry = _entry(mode: RouteMode.comfortable);
       final c = await start(entry);
       final s = c.read(navigationProvider(entry));
 
@@ -398,7 +402,7 @@ void main() {
     });
 
     test('엘리베이터 우선인데 계단이 섞이면 알려준다', () async {
-      final entry = _entry(mode: RouteMode.elevator);
+      final entry = _entry(mode: RouteMode.comfortable);
       final c = await start(entry);
       routes.answer = (from, to) async => _plan(
         _route([

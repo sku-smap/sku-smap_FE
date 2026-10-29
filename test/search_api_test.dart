@@ -289,20 +289,20 @@ void main() {
     test('편한 길은 엘리베이터 우선, 실내·지하는 실내 우선을 켠다', () {
       final c = trip();
       c.read(tripProvider.notifier).applyRouteOption(RouteOption.comfortable);
-      expect(c.read(tripProvider).mode, RouteMode.elevator);
+      expect(c.read(tripProvider).mode, RouteMode.comfortable);
       expect(c.read(tripProvider).routeOption, RouteOption.comfortable);
 
       c
           .read(tripProvider.notifier)
           .applyRouteOption(RouteOption.indoorUndergroundFirst);
       expect(c.read(tripProvider).indoor, isTrue);
-      expect(c.read(tripProvider).mode, RouteMode.elevator);
+      expect(c.read(tripProvider).mode, RouteMode.comfortable);
     });
 
-    test('최단 경로는 앱 옵션을 그대로 두고 값만 저장한다', () {
+    test('최단 경로는 최단거리 이동 방식으로 바꾼다', () {
       final c = trip();
       c.read(tripProvider.notifier).applyRouteOption(RouteOption.shortest);
-      expect(c.read(tripProvider).mode, RouteMode.outdoor);
+      expect(c.read(tripProvider).mode, RouteMode.shortest);
       expect(c.read(tripProvider).routeOption, RouteOption.shortest);
     });
 
@@ -310,7 +310,7 @@ void main() {
       final c = trip();
       c.read(tripProvider.notifier)
         ..applyRouteOption(RouteOption.outdoorFirst)
-        ..setMode(RouteMode.elevator);
+        ..setMode(RouteMode.comfortable);
       expect(c.read(tripProvider).routeOption, isNull);
     });
   });
