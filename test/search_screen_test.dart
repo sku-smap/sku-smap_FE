@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
@@ -307,6 +308,27 @@ void main() {
     expect(find.text('home'), findsOneWidget);
   });
 
+  testWidgets('후보를 누르면 확정 중을 보이고 기록이 끝나면 길안내로 간다', (tester) async {
+    final repo = _SlowSelectRepo();
+    final container = await _pumpSearch(
+      tester,
+      '/search?mode=voice',
+      repo: repo,
+    );
+    container
+        .read(tripProvider.notifier)
+        .setFrom(const CampusPlace(id: 'f-bus', name: '버스정류장'));
+
+    await _tap(tester, find.text('유담관이 어디에요?'));
+    await _tap(tester, find.text('문예관'));
+    expect(find.text('문예관 · 확정 중…'), findsOneWidget);
+    expect(_pushed(tester), isNull);
+
+    repo.selection.complete();
+    await _wait(tester, 300);
+    expect(_pushed(tester), '/navigation?from=f-bus&to=b-moonye&mode=outdoor');
+  });
+
   testWidgets('검색이 실패하면 오류와 다시 시도를 보여준다', (tester) async {
     await _pumpSearch(tester, '/search?mode=voice', repo: _FailingRepo());
 
@@ -314,6 +336,45 @@ void main() {
     expect(find.text('인터넷 연결을 확인해 주세요.'), findsOneWidget);
     expect(find.text('다시 시도'), findsOneWidget);
   });
+}
+
+class _SlowSelectRepo implements SearchRepository {
+  final selection = Completer<void>();
+
+  @override
+  Future<SearchResult> searchText({
+    required SearchTarget target,
+    required String query,
+  }) async => const SearchResult(
+    target: SearchTarget.destination,
+    searchId: 3,
+    candidates: [
+      SearchCandidate(
+        id: 'place:b-bukak',
+        type: CandidateType.place,
+        nodeId: 'bukak_1f_main_in',
+        name: '북악관',
+        placeId: 'b-bukak',
+      ),
+      SearchCandidate(
+        id: 'place:b-moonye',
+        type: CandidateType.place,
+        nodeId: 'moonye_1f_in',
+        name: '문예관',
+        placeId: 'b-moonye',
+      ),
+    ],
+  );
+
+  @override
+  Future<SearchResult> searchVoice({
+    required SearchTarget target,
+    required VoiceClip clip,
+  }) async => throw const NetworkException();
+
+  @override
+  Future<void> select({required int searchId, required String candidateId}) =>
+      selection.future;
 }
 
 class _FailingRepo implements SearchRepository {
@@ -328,4 +389,10 @@ class _FailingRepo implements SearchRepository {
     required SearchTarget target,
     required VoiceClip clip,
   }) async => throw const NetworkException();
+
+  @override
+  Future<void> select({
+    required int searchId,
+    required String candidateId,
+  }) async {}
 }
