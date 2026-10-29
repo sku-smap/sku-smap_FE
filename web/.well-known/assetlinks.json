@@ -1,0 +1,10 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.sku.smap",
+      "sha256_cert_fingerprints": ["28:50:75:90:89:1C:43:5F:2C:C4:2E:5A:12:F4:EC:CC:88:99:2C:8B:9C:F5:09:31:0D:5A:1F:77:4F:73:A0:B3"]
+    }
+  }
+]

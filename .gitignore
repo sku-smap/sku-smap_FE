@@ -50,3 +50,8 @@ app.*.map.json
 # Per-environment API settings (copy env/example.json)
 env/*.json
 !env/example.json
+
+# Android release signing (keep the key and its passwords out of Git)
+key.properties
+*.jks
+*.keystore
