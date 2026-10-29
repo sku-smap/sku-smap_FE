@@ -14,5 +14,5 @@ abstract final class NavigationAssets {
   static String pano(String node) => '$_photos/pano/$node.jpg';
   static String thumb(String node) => '$_photos/thumb/$node.jpg';
 
-  static const shareBase = 'https://smap-tawny.vercel.app/';
+  static const shareBase = 'https://sku-smap.vercel.app/';
 }

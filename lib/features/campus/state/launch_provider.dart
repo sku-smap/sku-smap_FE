@@ -31,7 +31,7 @@ class LaunchEntry {
   factory LaunchEntry.fromQuery(Map<String, String> q) => LaunchEntry(
     from: q['from'],
     to: q['to'],
-    nfcPlace: q['src'] == 'nfc' ? nfcPlaceName(q['from']) : null,
+    nfcPlace: q['src'] == 'nfc' ? resolvePlace(q['from'])?.name : null,
     wetKind: WetKind.values.where((k) => k.name == q['weather']).firstOrNull,
     demoClosures: q['closures'] == 'demo',
     demoReports: q['reports'] == 'demo',
