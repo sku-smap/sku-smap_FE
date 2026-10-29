@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:panorama_viewer/panorama_viewer.dart';
 
+import '../../../../core/network/app_exception.dart';
+import '../../../campus/data/campus_directory.dart';
 import '../../../campus/data/campus_models.dart';
+import '../../../campus/state/node_providers.dart';
 import '../../data/navigation_assets.dart';
 import '../../data/navigation_models.dart';
 import '../../state/navigation_controller.dart';
@@ -36,16 +39,27 @@ class _PanoViewState extends ConsumerState<PanoView> {
   var _loading = true;
   var _failed = false;
   var _attempt = 0;
+  var _renewed = false;
   ImageStream? _stream;
   late final _listener = ImageStreamListener(
     (_, _) {},
     onError: (_, _) {
-      if (mounted) setState(() => _failed = true);
+      if (!mounted) return;
+      // An expired signed URL gets one silent renewal before the error shows
+      if (!_renewed && _signed != null) {
+        _retry();
+      } else {
+        setState(() => _failed = true);
+      }
     },
   );
 
+  // The registry holds the newest signed URL after a renewal
+  String? get _signed =>
+      spotById[widget.node.id]?.imageUrl ?? widget.node.imageUrl;
+
   ImageProvider get _image => ref.read(photoImageProvider)(
-    widget.node.imageUrl ?? NavigationAssets.pano(widget.node.id),
+    _signed ?? NavigationAssets.pano(widget.node.id),
   );
 
   @override
@@ -68,6 +82,14 @@ class _PanoViewState extends ConsumerState<PanoView> {
 
   Future<void> _retry() async {
     await _image.evict();
+    if (_signed != null) {
+      _renewed = true;
+      try {
+        await ref.read(campusMapRefreshProvider)();
+      } on AppException {
+        // Keep the old URL; the retry shows the error again if it fails
+      }
+    }
     if (!mounted) return;
     setState(() {
       _failed = false;

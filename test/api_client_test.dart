@@ -248,7 +248,7 @@ void main() {
       final o = adapter.requests.single;
       expect(o.headers['Accept'], 'application/json');
       expect(o.headers['Accept-Language'], 'ko-KR');
-      expect(o.headers['X-Client-Platform'], isNotEmpty);
+      expect(o.headers.containsKey('X-Client-Platform'), isFalse);
       expect(o.headers.containsKey('Authorization'), isFalse);
       expect(o.connectTimeout, _config.connectTimeout);
       expect(o.receiveTimeout, _config.receiveTimeout);

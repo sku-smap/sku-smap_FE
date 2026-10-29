@@ -1,4 +1,5 @@
 import '../campus_models.dart';
+import 'node_dto.dart';
 
 // GET /api/v1/places item (PlaceResponseDTO)
 class PlaceDto {
@@ -26,7 +27,7 @@ class PlaceDto {
     arriveNodeId: json['arriveNodeId'] as String?,
     arriveNodeTitle: json['arriveNodeTitle'] as String?,
     doorPhoto: json['doorPhoto'] as String?,
-    aliases: json['aliases'] as String?,
+    aliases: _aliasesOf(json['aliases']),
     sub: json['sub'] as String?,
   );
 
@@ -39,8 +40,21 @@ class PlaceDto {
   final String? arriveNodeId;
   final String? arriveNodeTitle;
   final String? doorPhoto;
-  final String? aliases;
+  final List<String>? aliases;
   final String? sub;
+
+  // A string array; an older single string is split on | or ,
+  static List<String> _aliasesOf(Object? raw) {
+    final items = switch (raw) {
+      final List<dynamic> list => list.whereType<String>(),
+      final String text => text.split(RegExp('[|,]')),
+      _ => const <String>[],
+    };
+    return {
+      for (final a in items)
+        if (a.trim().isNotEmpty) a.trim(),
+    }.toList();
+  }
 
   static String? _text(String? s) {
     final t = s?.trim();
@@ -61,21 +75,17 @@ class PlaceDto {
           PlaceKind.facility,
       node: node,
       sub: _text(sub) ?? _composedSub(),
-      aliases: [
-        for (final a in (aliases ?? '').split(','))
-          if (a.trim().isNotEmpty) a.trim(),
-      ],
+      aliases: aliases ?? const [],
     );
   }
 
   // Building, floor and room when the server sends no sub
   String? _composedSub() {
-    final floor = _text(floorLabel);
     final room = _text(roomNo);
     final parts = [
       ?_text(building),
-      if (floor != null) '$floor층',
-      if (room != null) '$room호',
+      ?NodeDto.floorOf(floorLabel),
+      if (room != null) room.endsWith('호') ? room : '$room호',
     ];
     return parts.isEmpty ? null : parts.join(' ');
   }
