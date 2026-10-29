@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'core/router.dart';
 import 'core/theme.dart';
+import 'features/splash/presentation/widgets/splash_gate.dart';
 
 class SmapApp extends ConsumerWidget {
   const SmapApp({super.key});
@@ -14,6 +15,7 @@ class SmapApp extends ConsumerWidget {
       debugShowCheckedModeBanner: false,
       routerConfig: ref.watch(routerProvider),
       theme: buildTheme(),
+      builder: (context, child) => SplashGate(child: child!),
     );
   }
 }

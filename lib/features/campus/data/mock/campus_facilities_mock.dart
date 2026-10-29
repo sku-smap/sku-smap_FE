@@ -1,0 +1,102 @@
+import '../campus_models.dart';
+
+const campusFacilities = [
+  FacilitySpot(
+    category: FacilityCategory.store,
+    building: '청운관',
+    mapX: 81,
+    mapY: 31,
+    places: [CampusPlace(id: 'r-chungwoon-955', name: '이마트24 편의점')],
+  ),
+  FacilitySpot(
+    category: FacilityCategory.store,
+    building: '유담관',
+    mapX: 24,
+    mapY: 47,
+    places: [CampusPlace(id: 'r-yudam-905', name: '매점')],
+  ),
+  FacilitySpot(
+    category: FacilityCategory.store,
+    building: '북악관',
+    mapX: 18,
+    mapY: 18,
+    level: MapLevel.underground,
+    places: [CampusPlace(id: 'r-bukak-954', name: 'GS25 편의점')],
+  ),
+  FacilitySpot(
+    category: FacilityCategory.food,
+    building: '한림관',
+    mapX: 44,
+    mapY: 37,
+    places: [CampusPlace(id: 'r-hanlim-201', name: '교직원·학생식당')],
+  ),
+  FacilitySpot(
+    category: FacilityCategory.food,
+    building: '청운관',
+    mapX: 81,
+    mapY: 31,
+    places: [
+      CampusPlace(id: 'r-chungwoon-956', name: '수유리우동'),
+      CampusPlace(id: 'r-chungwoon-957', name: '노브랜드버거'),
+    ],
+  ),
+  FacilitySpot(
+    category: FacilityCategory.cafe,
+    building: '유담관',
+    mapX: 24,
+    mapY: 47,
+    places: [CampusPlace(id: 'r-yudam-907', name: '로렐카페')],
+  ),
+  FacilitySpot(
+    category: FacilityCategory.cafe,
+    building: '대일관',
+    mapX: 56,
+    mapY: 30,
+    places: [CampusPlace(id: 'r-daeil-B201', name: 'SP카페')],
+  ),
+  FacilitySpot(
+    category: FacilityCategory.cafe,
+    building: '은주2관',
+    mapX: 61,
+    mapY: 64,
+    places: [CampusPlace(id: 'r-eunju2-522', name: 'MD카페')],
+  ),
+  FacilitySpot(
+    category: FacilityCategory.atm,
+    building: '유담관',
+    mapX: 24,
+    mapY: 47,
+    places: [CampusPlace(id: 'r-yudam-304', name: '신한은행')],
+  ),
+  FacilitySpot(
+    category: FacilityCategory.atm,
+    building: '청운관',
+    mapX: 81,
+    mapY: 31,
+    places: [CampusPlace(id: 'b-chungwoon', name: '신한은행 ATM')],
+  ),
+  FacilitySpot(
+    category: FacilityCategory.post,
+    building: '유담관',
+    mapX: 24,
+    mapY: 47,
+    places: [CampusPlace(id: 'r-yudam-306', name: '우체국')],
+  ),
+  FacilitySpot(
+    category: FacilityCategory.print,
+    building: '북악관',
+    mapX: 24,
+    mapY: 20,
+    places: [CampusPlace(id: 'b-bukak', name: '프린트기')],
+  ),
+  FacilitySpot(
+    category: FacilityCategory.print,
+    building: '청운관',
+    mapX: 81,
+    mapY: 31,
+    places: [
+      CampusPlace(id: 'r-chungwoon-101', name: '서점'),
+      CampusPlace(id: 'r-chungwoon-102', name: '복사실'),
+    ],
+  ),
+];

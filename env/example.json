@@ -1,0 +1,5 @@
+{
+  "APP_ENV": "dev",
+  "API_BASE_URL": "https://api.milkyway03.cloud",
+  "USE_MOCK": "true"
+}
