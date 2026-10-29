@@ -40,6 +40,8 @@ class VoiceState {
     this.searchId,
     this.message,
     this.candidates,
+    this.confirming,
+    this.confirmError,
     this.result,
     this.error,
   });
@@ -50,8 +52,26 @@ class VoiceState {
   final int? searchId;
   final String? message;
   final List<SearchCandidate>? candidates;
+
+  // Candidate being recorded with the server; its chip shows progress
+  final String? confirming;
+
+  // Recording failed for a reason worth retrying; candidates stay
+  final String? confirmError;
   final VoiceOutcome? result;
   final String? error;
+
+  VoiceState copyWith({
+    String? Function()? confirming,
+    String? Function()? confirmError,
+  }) => VoiceState(
+    heard: heard,
+    searchId: searchId,
+    message: message,
+    candidates: candidates,
+    confirming: confirming != null ? confirming() : this.confirming,
+    confirmError: confirmError != null ? confirmError() : this.confirmError,
+  );
 
   String get hint =>
       busy?.label ??
@@ -67,6 +87,7 @@ class VoiceController extends Notifier<VoiceState> {
   VoiceController(this.target);
 
   static const micDenied = '마이크를 쓸 수 없어요. 설정에서 허용하거나 아래 문장을 눌러 보세요.';
+  static const expired = '검색이 만료됐어요. 다시 말하거나 다시 시도해 주세요.';
 
   final SearchTarget target;
   Timer? _autoStop;
@@ -74,6 +95,7 @@ class VoiceController extends Notifier<VoiceState> {
   Future<SearchResult> Function()? _last;
   String? _lastHeard;
   RouteOption? _routeOption;
+  VoiceOutcome? _pending;
 
   VoiceRecorder get _recorder => ref.read(voiceRecorderProvider);
 
@@ -163,36 +185,73 @@ class VoiceController extends Notifier<VoiceState> {
       final r = await request();
       if (run != _run) return;
       final said = r.transcript ?? heard;
-      // One candidate is settled at once; several are offered as chips
-      state = r.candidates.length == 1
-          ? VoiceState(
-              heard: said,
-              searchId: r.searchId,
-              result: VoiceOutcome(
-                place: r.candidates.single,
-                origin: r.origin,
-                routeOption: r.routeOption,
-                reply: r.message,
-              ),
-            )
-          : VoiceState(
-              heard: said,
-              searchId: r.searchId,
-              message: r.message,
-              candidates: r.candidates,
-            );
       _routeOption = r.routeOption;
+      state = VoiceState(
+        heard: said,
+        searchId: r.searchId,
+        message: r.message,
+        candidates: r.candidates,
+      );
+      // One candidate is settled at once; several are offered as chips
+      if (r.candidates.length == 1) {
+        await _confirm(
+          VoiceOutcome(
+            place: r.candidates.single,
+            origin: r.origin,
+            routeOption: r.routeOption,
+            reply: r.message,
+          ),
+        );
+      }
     } on AppException catch (e) {
       if (run != _run) return;
       state = VoiceState(heard: heard, error: e.message);
     }
   }
 
-  void choose(SearchCandidate place) => state = VoiceState(
-    heard: state.heard,
-    searchId: state.searchId,
-    result: VoiceOutcome(place: place, routeOption: _routeOption),
-  );
+  Future<void> choose(SearchCandidate place) =>
+      _confirm(VoiceOutcome(place: place, routeOption: _routeOption));
+
+  Future<void> retryConfirm() async {
+    final pending = _pending;
+    if (pending != null) await _confirm(pending);
+  }
+
+  // Record the pick, then hand it over; only candidates of this search count
+  Future<void> _confirm(VoiceOutcome outcome) async {
+    final s = state;
+    final id = outcome.place.id;
+    if (s.confirming != null || !(s.candidates ?? []).any((c) => c.id == id)) {
+      return;
+    }
+    final searchId = s.searchId;
+    if (searchId == null) {
+      state = VoiceState(heard: s.heard, result: outcome);
+      return;
+    }
+    final run = _run;
+    _pending = outcome;
+    state = s.copyWith(confirming: () => id, confirmError: () => null);
+    try {
+      await ref
+          .read(searchRepositoryProvider)
+          .select(searchId: searchId, candidateId: id);
+      if (run != _run) return;
+      _pending = null;
+      state = VoiceState(heard: s.heard, searchId: searchId, result: outcome);
+    } on AppException catch (e) {
+      if (run != _run) return;
+      // The search is gone: start over; other failures keep the chips
+      final gone =
+          e is ServerException && (e.statusCode == 400 || e.statusCode == 404);
+      state = gone
+          ? VoiceState(heard: s.heard, error: expired)
+          : state.copyWith(
+              confirming: () => null,
+              confirmError: () => e.message,
+            );
+    }
+  }
 }
 
 final voiceControllerProvider = NotifierProvider.autoDispose
