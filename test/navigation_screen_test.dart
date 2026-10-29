@@ -8,7 +8,11 @@ import 'package:smap/core/router.dart';
 import 'package:smap/features/campus/data/campus_directory.dart';
 import 'package:smap/features/campus/data/campus_models.dart';
 import 'package:smap/features/campus/state/trip_controller.dart';
+import 'package:smap/core/network/app_exception.dart';
 import 'package:smap/features/navigation/data/guide_voice.dart';
+import 'package:smap/features/navigation/data/mock_route_repository.dart';
+import 'package:smap/features/navigation/data/route_plan.dart';
+import 'package:smap/features/navigation/data/route_repository.dart';
 import 'package:smap/features/navigation/data/route_graph.dart';
 import 'package:smap/features/navigation/presentation/screens/navigation_screen.dart';
 import 'package:smap/features/navigation/state/navigation_controller.dart';
@@ -51,7 +55,26 @@ GoRouter _router(String initial) {
   );
 }
 
-Future<_FakeVoice> _pump(WidgetTester tester, String initial) async {
+// Fails until the test lets it through, then walks the bundled graph
+class _FlakyRoutes implements RouteRepository {
+  var fail = true;
+
+  @override
+  Future<RoutePlan?> find({
+    required String from,
+    required String to,
+    required RouteOption option,
+  }) => fail
+      ? Future.error(const NetworkException())
+      : MockRouteRepository(blocked: () => {})
+            .find(from: from, to: to, option: option);
+}
+
+Future<_FakeVoice> _pump(
+  WidgetTester tester,
+  String initial, {
+  RouteRepository? routes,
+}) async {
   tester.view.physicalSize = const Size(390, 844);
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.reset);
@@ -63,10 +86,13 @@ Future<_FakeVoice> _pump(WidgetTester tester, String initial) async {
         routerProvider.overrideWithValue(router),
         guideVoiceProvider.overrideWithValue(voice),
         photoImageProvider.overrideWithValue((_) => _pixel),
+        if (routes != null) routeRepositoryProvider.overrideWithValue(routes),
       ],
       child: MaterialApp.router(routerConfig: router),
     ),
   );
+  // Catalogs, then the route request
+  await tester.pump();
   await tester.pump();
   return voice;
 }
@@ -235,6 +261,7 @@ void main() {
     GoRouter.of(home).push('/navigation');
     await tester.pump();
     await tester.pump();
+    await tester.pump();
 
     expect(find.text('1 / 8단계'), findsOneWidget);
     expect(find.text('→ GS25 편의점'), findsOneWidget);
@@ -247,5 +274,19 @@ void main() {
     await _tap(tester, find.text('돌아가기'));
     expect(find.text('home'), findsOneWidget);
     await tester.pump(const Duration(seconds: 4));
+  });
+
+  testWidgets('경로를 못 불러오면 다시 시도하고 돌아갈 수 있다', (tester) async {
+    final routes = _FlakyRoutes();
+    await _pump(tester, _toGs25, routes: routes);
+
+    expect(find.text('인터넷 연결을 확인해 주세요. 눌러서 다시 시도해 주세요.'), findsOneWidget);
+    expect(find.text('돌아가기'), findsOneWidget);
+
+    routes.fail = false;
+    await tester.tap(find.textContaining('다시 시도'));
+    await tester.pump();
+    await tester.pump();
+    expect(find.text('1 / 8단계'), findsOneWidget);
   });
 }
