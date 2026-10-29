@@ -98,7 +98,7 @@ class TripController extends Notifier<TripState> {
 
   void toggleIndoor() {
     _indoorTouched = true;
-    state = state.copyWith(indoor: !state.indoor);
+    state = state.copyWith(indoor: !state.indoor, routeOption: () => null);
   }
 }
 

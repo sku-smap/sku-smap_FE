@@ -295,7 +295,7 @@ class _Sheet extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final stats = routeStats(route.path);
+    final stats = routeStats(route.path, route.legs);
     final distance = stats.meters >= 1000
         ? '${(stats.meters / 1000).toStringAsFixed(1)}km'
         : '${stats.meters}m';
@@ -410,7 +410,7 @@ class _Sheet extends ConsumerWidget {
               image: photo(NavigationAssets.thumb(id)),
               title: i == route.last
                   ? '도착 · ${route.to.label}'
-                  : instruction(id, route.path[i + 1]),
+                  : instruction(id, route.path[i + 1], route.legAt(i)),
               sub: spotById[id]?.title ?? '',
               done: i < stepIdx,
               current: i == stepIdx,

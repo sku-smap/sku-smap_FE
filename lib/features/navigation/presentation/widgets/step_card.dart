@@ -3,7 +3,6 @@ import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../../home/presentation/widgets/pressable.dart';
 import '../../data/navigation_assets.dart';
-import '../../data/route_graph.dart';
 import '../../state/navigation_controller.dart';
 import '../navigation_tokens.dart';
 
@@ -35,10 +34,7 @@ class StepCard extends StatelessWidget {
     final step = state.stepIdx;
     final arrived = state.arrived;
     final next = state.next;
-    final here = state.node;
-    final note = here != null && next != null
-        ? edgeBetween(here, next)?.note
-        : null;
+    final note = route.legAt(step)?.note;
     final sub = route.to.sub;
 
     return Semantics(

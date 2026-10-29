@@ -13,6 +13,7 @@ import '../navigation_tokens.dart';
 import '../widgets/map_data_notice.dart';
 import '../widgets/route_overview.dart';
 import '../widgets/step_card.dart';
+import '../widgets/viewer_notice.dart';
 import '../widgets/viewer_stage.dart';
 
 class NavigationScreen extends ConsumerStatefulWidget {
@@ -42,6 +43,7 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> {
           RouteMode.values.where((m) => m.name == q['mode']).firstOrNull ??
           (linked ? RouteMode.outdoor : trip.mode),
       indoor: linked ? q['indoor'] == '1' : trip.indoor,
+      option: linked ? null : trip.routeOption,
     );
   }
 
@@ -53,27 +55,22 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> {
     final node = state.node;
     final here = node == null ? null : spotById[node];
 
-    if (state.loading || !ref.watch(nodeCatalogProvider).hasValue) {
+    if (!ref.watch(nodeCatalogProvider).hasValue) {
       return const MapDataNotice();
     }
 
-    if (here == null) {
-      return Scaffold(
-        backgroundColor: NavColors.photoBg,
-        body: Stack(
-          children: [
-            Center(
-              child: TextButton(
-                onPressed: () => NavigationRoutes.exit(context),
-                child: Text(
-                  '돌아가기',
-                  style: NavText.button.copyWith(color: NavColors.surface),
-                ),
-              ),
-            ),
-            AppToast(message: state.toast),
-          ],
-        ),
+    final error = state.error;
+    if (state.loading || error != null || here == null) {
+      return _Blank(
+        notice: state.loading
+            ? const ViewerNotice(text: '경로를 찾는 중…')
+            : error != null
+            ? ViewerNotice(
+                text: '$error 눌러서 다시 시도해 주세요.',
+                onTap: controller.retry,
+              )
+            : null,
+        toast: state.toast,
       );
     }
 
@@ -131,6 +128,45 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> {
             AppToast(message: state.toast),
           ],
         ),
+      ),
+    );
+  }
+}
+
+// Dark viewer background while there is no photo to show yet
+class _Blank extends StatelessWidget {
+  const _Blank({this.notice, this.toast});
+
+  final Widget? notice;
+  final String? toast;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: NavColors.photoBg,
+      body: Stack(
+        children: [
+          Center(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  ?notice,
+                  const SizedBox(height: 12),
+                  TextButton(
+                    onPressed: () => NavigationRoutes.exit(context),
+                    child: Text(
+                      '돌아가기',
+                      style: NavText.button.copyWith(color: NavColors.surface),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          AppToast(message: toast),
+        ],
       ),
     );
   }
