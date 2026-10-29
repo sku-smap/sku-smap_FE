@@ -58,9 +58,6 @@ CampusPlace? resolvePlace(String? id) {
 // The 360 spot a place id stands for
 String? nodeOf(String? id) => placeById[id]?.node ?? spotById[id]?.id;
 
-// NFC tag name for the place in a launch link
-String? nfcPlaceName(String? id) => nfcPlaceNames[id];
-
 // Nearest 360 spot to a map point (percent) on the same level
 PanoSpot? nearestSpot(double x, double y, [MapLevel level = MapLevel.ground]) {
   PanoSpot? best;

@@ -4,6 +4,8 @@ import '../data/campus_directory.dart';
 import '../data/campus_models.dart';
 import 'campus_status_providers.dart';
 import 'launch_provider.dart';
+import 'nfc_link_provider.dart';
+import 'node_providers.dart';
 import 'place_providers.dart';
 
 // Start, destination and route options shared by every screen
@@ -56,16 +58,28 @@ class TripController extends Notifier<TripState> {
         state = state.copyWith(indoor: wet);
       }
     });
-    // Link ids only the server knows resolve once the place list arrives
-    ref.listen(placeCatalogProvider, (_, next) {
+    // The latest tag wins over the launch link
+    var wantFrom = ref.read(nfcLinkProvider)?.id ?? launch.from;
+    // Link ids only the server knows resolve once places or nodes arrive
+    void resolveLinks(AsyncValue<Object?>? _, AsyncValue<Object?> next) {
       if (!next.hasValue) return;
       state = state.copyWith(
-        from: () => state.from ?? resolvePlace(launch.from),
+        from: () => state.from ?? resolvePlace(wantFrom),
         to: () => state.to ?? resolvePlace(launch.to),
       );
+    }
+
+    ref.listen(placeCatalogProvider, resolveLinks);
+    ref.listen(nodeCatalogProvider, resolveLinks);
+    // A tag tapped while the app runs replaces the start
+    ref.listen(nfcLinkProvider, (_, tap) {
+      if (tap == null || !tap.warm) return;
+      wantFrom = tap.id;
+      final place = resolvePlace(tap.id);
+      if (place != null) state = state.copyWith(from: () => place);
     });
     return TripState(
-      from: resolvePlace(launch.from),
+      from: resolvePlace(wantFrom),
       to: resolvePlace(launch.to),
       indoor: ref.read(campusWeatherProvider).value?.isWet ?? false,
     );
