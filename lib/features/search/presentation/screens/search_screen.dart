@@ -57,13 +57,14 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     final flowController = ref.read(provider.notifier);
     final trip = ref.read(tripProvider.notifier);
 
-    void startRoute() => SearchRoutes.navigate(context, ref.read(tripProvider));
+    // Both ends set: back to the home route card, where 길찾기 starts guidance
+    void toRouteCard() => SearchRoutes.home(context);
 
-    // Destination first: guide now if the start is known, else ask for it
+    // Destination first: ask for a missing start, else return to the card
     void chooseTo(CampusPlace place) {
       trip.setTo(place);
       if (ref.read(tripProvider).from != null) {
-        startRoute();
+        toRouteCard();
       } else {
         flowController.pick(PickTarget.from);
         flowController.toast('${place.name}까지 안내할게요. 지금 계신 곳을 골라주세요');
@@ -73,7 +74,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     void chooseFrom(CampusPlace place) {
       trip.setFrom(place);
       if (ref.read(tripProvider).to != null) {
-        startRoute();
+        toRouteCard();
       } else {
         SearchRoutes.close(context);
       }
@@ -99,7 +100,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
       final from = ref.read(tripProvider).from;
       trip.setTo(place);
       if (from != null && from.id != place.id) {
-        startRoute();
+        toRouteCard();
       } else {
         flowController.pick(PickTarget.from);
       }

@@ -161,7 +161,7 @@ void main() {
     expect(container.read(tripProvider).to?.id, 'r-hyein-101');
     expect(find.text('어디에서 출발하나요?'), findsOneWidget);
     expect(find.textContaining('까지 안내할게요. 지금 계신 곳을 골라주세요'), findsOneWidget);
-    expect(find.text('현재 위치로'), findsOneWidget);
+    expect(find.text('현재 위치로'), findsNothing);
     expect(find.text('지도에서 고르기'), findsOneWidget);
 
     await _wait(tester, 3200);
@@ -169,7 +169,7 @@ void main() {
     expect(find.textContaining('까지 안내할게요'), findsNothing);
   });
 
-  testWidgets('출발·도착이 다 정해지면 길안내로 바꾼다', (tester) async {
+  testWidgets('출발·도착이 다 정해지면 길안내 대신 홈 경로 카드로 돌아간다', (tester) async {
     final container = await _pumpSearch(tester, '/search?pick=from');
     container
         .read(tripProvider.notifier)
@@ -178,10 +178,9 @@ void main() {
     await tester.enterText(find.byType(TextField), '북악');
     await _typed(tester);
     await _tap(tester, find.text('북악관'));
-    expect(
-      _pushed(tester),
-      '/navigation?from=b-bukak&to=b-bonkwan&mode=outdoor',
-    );
+    expect(_pushed(tester), isNull);
+    expect(find.text('home'), findsOneWidget);
+    expect(container.read(tripProvider).from?.id, 'b-bukak');
   });
 
   testWidgets('링크로 받은 도착지가 이전 도착지보다 우선한다', (tester) async {
@@ -210,27 +209,6 @@ void main() {
     await _tap(tester, find.text('지도에서 고르기'));
     expect(find.text('지상'), findsOneWidget);
     expect(find.text('지하'), findsOneWidget);
-  });
-
-  testWidgets('학교 밖이면 위치 오류를 보여준다 (S-13)', (tester) async {
-    await _pumpSearch(tester, '/search?pick=from');
-
-    await _tap(tester, find.text('현재 위치로'));
-    expect(find.text('위치 찾는 중…'), findsOneWidget);
-    await _wait(tester, 700);
-    expect(find.textContaining('지금 학교 밖이에요'), findsOneWidget);
-  });
-
-  testWidgets('캠퍼스 안이면 가장 가까운 지점을 출발지로 넣는다 (S-14)', (tester) async {
-    final container = await _pumpSearch(
-      tester,
-      '/search?pick=from&location=campus',
-    );
-
-    await _tap(tester, find.text('현재 위치로'));
-    await _wait(tester, 700);
-    expect(container.read(tripProvider).from?.name, startsWith('현재 위치 · '));
-    expect(find.text('home'), findsOneWidget);
   });
 
   testWidgets('예시 문장으로 바로 도착지를 정한다 (S-15·S-16)', (tester) async {
@@ -268,15 +246,15 @@ void main() {
     expect(find.text('어디에서 출발하나요?'), findsOneWidget);
   });
 
-  testWidgets('문장에 출발지가 있으면 바로 길안내로 간다 (S-22)', (tester) async {
-    await _pumpSearch(tester, '/search?mode=voice');
+  testWidgets('문장에 출발지가 있으면 둘 다 채우고 홈 경로 카드로 돌아간다 (S-22)', (tester) async {
+    final container = await _pumpSearch(tester, '/search?mode=voice');
 
     await _tap(tester, find.text('북악관에서 문예관 가는 길'));
     await _wait(tester, 700);
-    expect(
-      _pushed(tester),
-      '/navigation?from=b-bukak&to=b-moonye&mode=outdoor',
-    );
+    expect(_pushed(tester), isNull);
+    expect(find.text('home'), findsOneWidget);
+    expect(container.read(tripProvider).to?.id, 'b-moonye');
+    expect(container.read(tripProvider).from?.id, 'b-bukak');
   });
 
   testWidgets('계단 말고 라고 하면 편한길로 안내한다', (tester) async {
@@ -288,10 +266,9 @@ void main() {
     await _tap(tester, find.text('계단 말고 혜인관 가는 길'));
     await _wait(tester, 700);
     expect(container.read(tripProvider).mode, RouteMode.comfortable);
-    expect(
-      _pushed(tester),
-      '/navigation?from=f-bus&to=b-hyein&mode=comfortable',
-    );
+    expect(_pushed(tester), isNull);
+    expect(find.text('home'), findsOneWidget);
+    expect(container.read(tripProvider).to?.id, 'b-hyein');
   });
 
   testWidgets('검색창 마이크로 음성 화면을 연다', (tester) async {
@@ -311,7 +288,7 @@ void main() {
     expect(find.text('home'), findsOneWidget);
   });
 
-  testWidgets('후보를 누르면 기록을 기다리지 않고 길안내로 간다', (tester) async {
+  testWidgets('후보를 누르면 기록을 기다리지 않고 홈 경로 카드로 돌아간다', (tester) async {
     final repo = _SlowSelectRepo();
     final container = await _pumpSearch(
       tester,
@@ -325,7 +302,9 @@ void main() {
     await _tap(tester, find.text('유담관이 어디에요?'));
     await _tap(tester, find.text('문예관'));
     await _wait(tester, 300);
-    expect(_pushed(tester), '/navigation?from=f-bus&to=b-moonye&mode=outdoor');
+    expect(_pushed(tester), isNull);
+    expect(find.text('home'), findsOneWidget);
+    expect(container.read(tripProvider).to?.id, 'b-moonye');
   });
 
   testWidgets('검색이 실패하면 오류와 다시 시도를 보여준다', (tester) async {

@@ -45,20 +45,15 @@ class HomeScreen extends ConsumerWidget {
 
     void startRoute() => HomeRoutes.navigate(context, ref.read(tripProvider));
 
-    // Pick a destination, then ask for the start or go straight to guidance
+    // Pick a destination and ask for a missing start; guidance waits for 길찾기
     void chooseTo(CampusPlace place) {
       tripController.setTo(place);
-      if (ref.read(tripProvider).from != null) {
-        startRoute();
-      } else {
+      if (ref.read(tripProvider).from == null) {
         HomeRoutes.pickFrom(context, to: place);
       }
     }
 
-    void chooseFrom(CampusPlace place) {
-      tripController.setFrom(place);
-      if (ref.read(tripProvider).to != null) startRoute();
-    }
+    void chooseFrom(CampusPlace place) => tripController.setFrom(place);
 
     void openBuilding(CampusBuilding building) {
       showHomeSheet(
