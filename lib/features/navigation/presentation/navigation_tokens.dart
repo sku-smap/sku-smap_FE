@@ -32,8 +32,6 @@ abstract final class NavColors {
   static const linkGlow = Color(0x8C2272EB);
   static const markX = Color(0x2EEF4444);
   static const markLabel = Color(0xB3000000);
-  static const overlay = Color(0xCC000000);
-  static const overlayRow = Color(0x1FFFFFFF);
 }
 
 abstract final class NavShadows {
@@ -63,9 +61,8 @@ abstract final class NavLayout {
   static const mapWidth = 0.46;
   static const mapMaxWidth = 200.0;
   static const mapAspect = 171.4 / 114.5;
-  // Floor bar under the top bar (Figma y 77), room list below the mini map
+  // Floor bar under the top bar (Figma y 77)
   static const floorBarTop = 65.0;
-  static const roomListTop = 250.0;
   static const floorBarVisible = 5;
   static const editInset = 10.0;
 
@@ -261,17 +258,4 @@ abstract final class NavText {
     800,
   );
   static final roomName = _base.copyWith(fontSize: 15, height: 1.35);
-  static final overlayHead = _w(
-    _base.copyWith(fontSize: 13, color: Colors.white),
-    700,
-  );
-  static final overlayToggle = _base.copyWith(
-    fontSize: 12,
-    color: Colors.white.withValues(alpha: 0.7),
-  );
-  static final overlayRow = _base.copyWith(
-    fontSize: 13,
-    height: 1.35,
-    color: Colors.white,
-  );
 }
