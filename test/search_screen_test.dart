@@ -314,6 +314,21 @@ void main() {
     expect(find.text('인터넷 연결을 확인해 주세요.'), findsOneWidget);
     expect(find.text('다시 시도'), findsOneWidget);
   });
+
+  testWidgets('출발지만 말하면 출발지를 넣고 도착지 고르기로 넘어간다', (tester) async {
+    final container = await _pumpSearch(
+      tester,
+      '/search?mode=voice',
+      repo: _OriginOnlyRepo(),
+    );
+
+    await _tap(tester, find.text('유담관이 어디에요?'));
+    await _wait(tester, 300);
+    expect(container.read(tripProvider).from?.id, 'b-yudam');
+    expect(container.read(tripProvider).to, isNull);
+    expect(find.text('어디로 갈까요?'), findsOneWidget);
+    await _wait(tester, 3600);
+  });
 }
 
 class _SlowSelectRepo implements SearchRepository {
@@ -351,6 +366,14 @@ class _SlowSelectRepo implements SearchRepository {
   }) async => throw const NetworkException();
 
   @override
+  Future<SearchResult> searchRouteText(String query) =>
+      searchText(target: SearchTarget.destination, query: query);
+
+  @override
+  Future<SearchResult> searchRouteVoice(VoiceClip clip) async =>
+      throw const NetworkException();
+
+  @override
   Future<void> select({required int searchId, required String candidateId}) =>
       selection.future;
 }
@@ -369,8 +392,33 @@ class _FailingRepo implements SearchRepository {
   }) async => throw const NetworkException();
 
   @override
+  Future<SearchResult> searchRouteText(String query) async =>
+      throw const NetworkException();
+
+  @override
+  Future<SearchResult> searchRouteVoice(VoiceClip clip) async =>
+      throw const NetworkException();
+
+  @override
   Future<void> select({
     required int searchId,
     required String candidateId,
   }) async {}
+}
+
+// The sentence named only the start
+class _OriginOnlyRepo extends _FailingRepo {
+  @override
+  Future<SearchResult> searchRouteText(String query) async =>
+      const SearchResult(
+        target: SearchTarget.destination,
+        message: '어디로 갈지 알려 주세요.',
+        origin: SearchCandidate(
+          id: 'place:b-yudam',
+          type: CandidateType.place,
+          nodeId: 'yudam_9f',
+          name: '유담관',
+          placeId: 'b-yudam',
+        ),
+      );
 }

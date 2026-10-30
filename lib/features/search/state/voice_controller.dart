@@ -17,7 +17,8 @@ enum VoiceBusy {
   final String label;
 }
 
-// What the voice screen hands back once a place is settled
+// What the voice screen hands back once a place is settled; a sentence that
+// named only the start has no place
 class VoiceOutcome {
   const VoiceOutcome({
     required this.place,
@@ -26,7 +27,7 @@ class VoiceOutcome {
     this.reply,
   });
 
-  final SearchCandidate place;
+  final SearchCandidate? place;
   final SearchCandidate? origin;
   final RouteOption? routeOption;
   final String? reply;
@@ -74,8 +75,12 @@ class VoiceController extends Notifier<VoiceState> {
   Future<SearchResult> Function()? _last;
   String? _lastHeard;
   RouteOption? _routeOption;
+  SearchCandidate? _origin;
 
   VoiceRecorder get _recorder => ref.read(voiceRecorderProvider);
+
+  // Destination voice asks the route search, which can also find the start
+  bool get _destination => target == SearchTarget.destination;
 
   @override
   VoiceState build() {
@@ -117,7 +122,9 @@ class VoiceController extends Notifier<VoiceState> {
     }
     final repo = ref.read(searchRepositoryProvider);
     await _ask(
-      () => repo.searchVoice(target: target, clip: clip),
+      () => _destination
+          ? repo.searchRouteVoice(clip)
+          : repo.searchVoice(target: target, clip: clip),
       busy: VoiceBusy.hearing,
     );
   }
@@ -131,7 +138,9 @@ class VoiceController extends Notifier<VoiceState> {
     await _ask(
       () async {
         await recorder.cancel();
-        return repo.searchText(target: target, query: text);
+        return _destination
+            ? repo.searchRouteText(text)
+            : repo.searchText(target: target, query: text);
       },
       busy: VoiceBusy.finding,
       heard: text,
@@ -164,6 +173,15 @@ class VoiceController extends Notifier<VoiceState> {
       if (run != _run) return;
       final said = r.transcript ?? heard;
       _routeOption = r.routeOption;
+      _origin = r.origin;
+      // Only the start was named: hand it over and ask for the destination
+      if (r.candidates.isEmpty && r.origin != null) {
+        state = VoiceState(
+          heard: said,
+          result: VoiceOutcome(place: null, origin: r.origin, reply: r.message),
+        );
+        return;
+      }
       state = VoiceState(
         heard: said,
         searchId: r.searchId,
@@ -187,14 +205,15 @@ class VoiceController extends Notifier<VoiceState> {
     }
   }
 
-  Future<void> choose(SearchCandidate place) async =>
-      _settle(VoiceOutcome(place: place, routeOption: _routeOption));
+  Future<void> choose(SearchCandidate place) async => _settle(
+    VoiceOutcome(place: place, origin: _origin, routeOption: _routeOption),
+  );
 
   // Hand the pick over at once; the server keeps the selection only as a
   // log, so its call is fire-and-forget and a failure never blocks
   void _settle(VoiceOutcome outcome) {
     final s = state;
-    final id = outcome.place.id;
+    final id = outcome.place!.id;
     if (!(s.candidates ?? []).any((c) => c.id == id)) return;
     state = VoiceState(heard: s.heard, searchId: s.searchId, result: outcome);
     final searchId = s.searchId;

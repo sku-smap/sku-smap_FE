@@ -76,16 +76,19 @@ class RouteCard extends StatelessWidget {
             height: HomeLayout.goHeight,
             child: Row(
               children: [
-                HomeSegmented<RouteMode>(
-                  options: const [
-                    (RouteMode.outdoor, '야외경로'),
-                    (RouteMode.comfortable, '편한길'),
-                    (RouteMode.shortest, '최단거리'),
-                  ],
-                  selected: trip.mode,
-                  onChanged: onMode,
-                ),
-                const SizedBox(width: 10),
+                // Indoor-first is its own route option, so the modes hide
+                if (!trip.indoor) ...[
+                  HomeSegmented<RouteMode>(
+                    options: const [
+                      (RouteMode.outdoor, '야외경로'),
+                      (RouteMode.comfortable, '편한길'),
+                      (RouteMode.shortest, '최단거리'),
+                    ],
+                    selected: trip.mode,
+                    onChanged: onMode,
+                  ),
+                  const SizedBox(width: 10),
+                ],
                 Expanded(child: _GoButton(onTap: trip.canRoute ? onGo : null)),
               ],
             ),

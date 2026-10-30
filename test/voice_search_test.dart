@@ -76,6 +76,13 @@ class _Repo implements SearchRepository {
   }) => _wait('voice:${target.name}');
 
   @override
+  Future<SearchResult> searchRouteText(String query) =>
+      _wait('route:text:$query');
+
+  @override
+  Future<SearchResult> searchRouteVoice(VoiceClip clip) => _wait('route:voice');
+
+  @override
   Future<void> select({required int searchId, required String candidateId}) {
     selected.add('$searchId:$candidateId');
     return onSelect(searchId, candidateId);
@@ -118,12 +125,12 @@ void main() {
     unawaited(voice().handle('유담관이 어디에요?'));
     expect(read().busy, VoiceBusy.finding);
     await tester.pump();
-    expect(repo.asked.single, 'text:destination:유담관이 어디에요?');
+    expect(repo.asked.single, 'route:text:유담관이 어디에요?');
 
     repo.pending.single.complete(_result([_c('b-yudam', '유담관')]));
     await tester.pump();
     final outcome = read().result!;
-    expect(outcome.place.placeId, 'b-yudam');
+    expect(outcome.place!.placeId, 'b-yudam');
     expect(outcome.routeOption, RouteOption.comfortable);
     expect(read().searchId, 7);
   });
@@ -146,7 +153,7 @@ void main() {
     expect(read().result, isNull);
 
     await voice().choose(read().candidates!.last);
-    expect(read().result!.place.name, '학생회관');
+    expect(read().result!.place!.name, '학생회관');
     expect(read().result!.routeOption, RouteOption.comfortable);
   });
 
@@ -157,7 +164,7 @@ void main() {
     unawaited(voice().handle('유담관'));
     unawaited(voice().handle('북악관'));
     await tester.pump();
-    expect(repo.asked, ['text:destination:유담관']);
+    expect(repo.asked, ['route:text:유담관']);
     repo.pending.single.complete(_result([]));
     await tester.pump();
   });
@@ -191,7 +198,7 @@ void main() {
     unawaited(voice().retry());
     expect(read().busy, VoiceBusy.finding);
     await tester.pump();
-    expect(repo.asked, ['text:destination:유담관', 'text:destination:유담관']);
+    expect(repo.asked, ['route:text:유담관', 'route:text:유담관']);
     repo.pending.last.complete(_result([_c('b-yudam', '유담관')]));
     await tester.pump();
     expect(read().result, isNotNull);
@@ -216,9 +223,70 @@ void main() {
     expect(read().listening, isFalse);
     unawaited(voice().handle('유담관'));
     await tester.pump();
-    expect(repo.asked, ['text:destination:유담관']);
+    expect(repo.asked, ['route:text:유담관']);
     repo.pending.single.complete(_result([]));
     await tester.pump();
+  });
+
+  group('문장 길찾기', () {
+    testWidgets('도착지 음성은 문장 길찾기로 보내고 출발지도 함께 넘긴다', (tester) async {
+      setUpWith(_Recorder());
+      await tester.pump();
+
+      unawaited(voice().stop());
+      await tester.pump();
+      expect(repo.asked.single, 'route:voice');
+      repo.pending.single.complete(
+        SearchResult(
+          target: SearchTarget.destination,
+          searchId: 7,
+          origin: _c('b-yudam', '유담관'),
+          candidates: [_c('a', '북악관'), _c('b', '북악관 별관')],
+        ),
+      );
+      await tester.pump();
+      await voice().choose(read().candidates!.first);
+      expect(read().result!.place!.name, '북악관');
+      expect(read().result!.origin?.name, '유담관');
+    });
+
+    testWidgets('출발지만 말하면 출발지만 넘기고 도착지는 비운다', (tester) async {
+      setUpWith(_Recorder());
+      await tester.pump();
+
+      unawaited(voice().handle('나 유담관이야'));
+      await tester.pump();
+      repo.pending.single.complete(
+        SearchResult(
+          target: SearchTarget.destination,
+          message: '어디로 갈지 알려 주세요.',
+          origin: _c('b-yudam', '유담관'),
+        ),
+      );
+      await tester.pump();
+      expect(read().result!.place, isNull);
+      expect(read().result!.origin?.name, '유담관');
+      expect(repo.selected, isEmpty);
+    });
+
+    testWidgets('출발지 찾기 음성은 기존 장소 검색을 쓴다', (tester) async {
+      repo = _Repo();
+      final c = ProviderContainer(
+        overrides: [
+          searchRepositoryProvider.overrideWithValue(repo),
+          voiceRecorderProvider.overrideWithValue(_Recorder()),
+        ],
+      );
+      addTearDown(c.dispose);
+      final origin = voiceControllerProvider(SearchTarget.origin);
+      c.listen(origin, (_, _) {});
+      await tester.pump();
+      unawaited(c.read(origin.notifier).handle('유담관'));
+      await tester.pump();
+      expect(repo.asked.single, 'text:origin:유담관');
+      repo.pending.single.complete(_result([]));
+      await tester.pump();
+    });
   });
 
   group('후보 확정', () {
@@ -242,7 +310,7 @@ void main() {
       repo.onSelect = (_, _) => Completer<void>().future;
 
       await voice().choose(read().candidates!.first);
-      expect(read().result!.place.name, '학생식당');
+      expect(read().result!.place!.name, '학생식당');
       expect(repo.selected, ['7:place:a']);
     });
 
@@ -267,7 +335,7 @@ void main() {
       await voice().choose(candidates.first);
       await voice().choose(candidates.last);
       expect(repo.selected, ['7:place:a']);
-      expect(read().result!.place.name, '학생식당');
+      expect(read().result!.place!.name, '학생식당');
     });
 
     testWidgets('이전 검색의 후보는 고를 수 없다', (tester) async {
@@ -296,7 +364,7 @@ void main() {
 
       await voice().choose(read().candidates!.last);
       await tester.pump();
-      expect(read().result!.place.name, '학생회관');
+      expect(read().result!.place!.name, '학생회관');
       expect(read().error, isNull);
     });
 
@@ -307,7 +375,7 @@ void main() {
 
       await voice().choose(read().candidates!.first);
       expect(repo.selected, isEmpty);
-      expect(read().result!.place.name, '학생식당');
+      expect(read().result!.place!.name, '학생식당');
     });
   });
 }

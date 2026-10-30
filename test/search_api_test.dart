@@ -161,6 +161,54 @@ void main() {
     });
   });
 
+  group('문장 길찾기 검색 응답', () {
+    Map<String, Object?> part(String target, List<Map<String, Object?>> c) => {
+      ..._response(candidates: c),
+      'target': target,
+    };
+
+    test('출발지·도착지를 함께 찾으면 도착 후보와 가장 높은 출발 후보를 준다', () {
+      final r = SearchDto.routeResultFrom({
+        'mode': 'ROUTE',
+        'message': '출발지와 목적지를 골라 주세요.',
+        'transcript': '유담관에서 북악관 가고 싶어',
+        'origin': part('ORIGIN', [
+          _candidate(id: 'place:b-yudam', placeId: 'b-yudam', name: '유담관'),
+          _candidate(id: 'place:x', placeId: 'x', name: '다른 곳'),
+        ]),
+        'destination': part('DESTINATION', [
+          _candidate(id: 'place:b-bukak', placeId: 'b-bukak', name: '북악관'),
+        ]),
+      });
+      expect(r.target, SearchTarget.destination);
+      expect(r.transcript, '유담관에서 북악관 가고 싶어');
+      expect(r.message, '출발지와 목적지를 골라 주세요.');
+      expect(r.origin?.name, '유담관');
+      expect(r.candidates.single.name, '북악관');
+      expect(r.searchId, 12);
+      expect(r.routeOption, RouteOption.comfortable);
+    });
+
+    test('도착지만 찾으면 출발 후보가 없고, 출발지만 찾으면 도착 후보가 없다', () {
+      final toOnly = SearchDto.routeResultFrom({
+        'mode': 'DESTINATION_ONLY',
+        'origin': null,
+        'destination': part('DESTINATION', [_candidate()]),
+      });
+      expect(toOnly.origin, isNull);
+      expect(toOnly.candidates, hasLength(1));
+
+      final fromOnly = SearchDto.routeResultFrom({
+        'mode': 'ORIGIN_ONLY',
+        'origin': part('ORIGIN', [_candidate(name: '유담관')]),
+        'destination': null,
+      });
+      expect(fromOnly.origin?.name, '유담관');
+      expect(fromOnly.candidates, isEmpty);
+      expect(fromOnly.searchId, isNull);
+    });
+  });
+
   group('검색 API 요청', () {
     test('텍스트는 JSON으로 대상·문장·개수를 보낸다', () async {
       final (:repo, :adapter) = _api(_response());
@@ -193,6 +241,32 @@ void main() {
       expect(file.value.filename, 'voice.wav');
       expect(file.value.contentType.toString(), 'audio/wav');
       expect(file.value.length, 3);
+    });
+
+    test('문장 길찾기는 route-searches로 문장, 음성은 녹음을 보낸다', () async {
+      final route = {'mode': 'DESTINATION_ONLY', 'destination': _response()};
+      var (:repo, :adapter) = _api(route);
+      await repo.searchRouteText('유담관에서 북악관');
+      var o = adapter.requests.single;
+      expect(o.method, 'POST');
+      expect(o.uri.path, '/api/v1/route-searches');
+      expect(o.data, {'query': '유담관에서 북악관', 'limit': 5});
+
+      (:repo, :adapter) = _api(route);
+      await repo.searchRouteVoice(
+        VoiceClip(
+          bytes: Uint8List.fromList([1]),
+          duration: const Duration(milliseconds: 2000),
+        ),
+      );
+      o = adapter.requests.single;
+      expect(o.uri.path, '/api/v1/route-searches');
+      final form = o.data as FormData;
+      expect(Map.fromEntries(form.fields), {
+        'durationMs': '2000',
+        'limit': '5',
+      });
+      expect(form.files.single.value.filename, 'voice.wav');
     });
 
     test('후보 선택은 검색 ID 경로에 후보 ID를 PUT으로 보낸다', () async {

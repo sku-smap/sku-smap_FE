@@ -32,6 +32,14 @@ class MockSearchRepository implements SearchRepository {
     return _resultOf(target, transcript, heard: transcript);
   }
 
+  @override
+  Future<SearchResult> searchRouteText(String query) =>
+      searchText(target: SearchTarget.destination, query: query);
+
+  @override
+  Future<SearchResult> searchRouteVoice(VoiceClip clip) =>
+      searchVoice(target: SearchTarget.destination, clip: clip);
+
   // Bundled searches have no id, so nothing is ever recorded
   @override
   Future<void> select({

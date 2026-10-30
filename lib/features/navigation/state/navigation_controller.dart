@@ -31,16 +31,17 @@ typedef NavigationEntry = ({
   RouteOption? option,
 });
 
-// The route API takes one option: the searched one, else a picked mode over
-// indoor since stairs can rule a way out entirely
+// The route API takes one option: the searched one, else indoor-first when
+// its toggle is on (the mode buttons hide then), else the picked mode
 RouteOption routeOptionOf(NavigationEntry e) =>
     e.option ??
-    switch (e.mode) {
-      RouteMode.comfortable => RouteOption.comfortable,
-      RouteMode.shortest => RouteOption.shortest,
-      RouteMode.outdoor when e.indoor => RouteOption.indoorUndergroundFirst,
-      RouteMode.outdoor => RouteOption.outdoorFirst,
-    };
+    (e.indoor
+        ? RouteOption.indoorUndergroundFirst
+        : switch (e.mode) {
+            RouteMode.comfortable => RouteOption.comfortable,
+            RouteMode.shortest => RouteOption.shortest,
+            RouteMode.outdoor => RouteOption.outdoorFirst,
+          });
 
 class NavigationState {
   const NavigationState({

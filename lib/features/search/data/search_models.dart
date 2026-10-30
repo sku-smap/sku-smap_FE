@@ -54,7 +54,7 @@ class SearchResult {
   final RouteOption? routeOption;
   final List<SearchCandidate> candidates;
 
-  // Start named in the same sentence; only the bundled rules find it
+  // Best start named in the same sentence (route search)
   final SearchCandidate? origin;
 }
 
