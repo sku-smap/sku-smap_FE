@@ -204,7 +204,7 @@ void main() {
     expect(read().result, isNotNull);
   });
 
-  testWidgets('후보가 없으면 빈 후보 상태다', (tester) async {
+  testWidgets('문장 길찾기에서 아무것도 못 찾아도 결과를 넘겨 화면이 비우게 한다', (tester) async {
     setUpWith(_Recorder());
     await tester.pump();
 
@@ -212,7 +212,10 @@ void main() {
     await tester.pump();
     repo.pending.single.complete(_result([]));
     await tester.pump();
-    expect(read().candidates, isEmpty);
+    expect(read().result, isNotNull);
+    expect(read().result!.place, isNull);
+    expect(read().result!.origin, isNull);
+    expect(repo.selected, isEmpty);
   });
 
   testWidgets('마이크를 못 쓰면 안내하고 예시 문장은 쓸 수 있다', (tester) async {

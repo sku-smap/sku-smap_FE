@@ -11,6 +11,9 @@ class ApiSearchRepository implements SearchRepository {
 
   static const _path = '/api/v1/searches';
   static const _routePath = '/api/v1/route-searches';
+
+  // Only the best candidate per end; none means that end was not recognized
+  static const _routeLimit = 1;
   static const _limit = 5;
   static const _uploadTimeout = Duration(seconds: 30);
 
@@ -53,7 +56,7 @@ class ApiSearchRepository implements SearchRepository {
   @override
   Future<SearchResult> searchRouteText(String query) => _api.post(
     _routePath,
-    body: {'query': query, 'limit': _limit},
+    body: {'query': query, 'limit': _routeLimit},
     decode: SearchDto.routeResultFrom,
   );
 
@@ -62,7 +65,7 @@ class ApiSearchRepository implements SearchRepository {
     _routePath,
     form: FormData.fromMap({
       'durationMs': clip.duration.inMilliseconds,
-      'limit': _limit,
+      'limit': _routeLimit,
       'audio': MultipartFile.fromBytes(
         clip.bytes,
         filename: 'voice.wav',

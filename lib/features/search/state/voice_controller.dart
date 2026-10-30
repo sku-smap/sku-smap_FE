@@ -174,12 +174,21 @@ class VoiceController extends Notifier<VoiceState> {
       final said = r.transcript ?? heard;
       _routeOption = r.routeOption;
       _origin = r.origin;
-      // Only the start was named: hand it over and ask for the destination
-      if (r.candidates.isEmpty && r.origin != null) {
+      // The route search sends at most one candidate per end; settle now
+      // even when an end was not found, so the screen can clear it
+      if (_destination && r.candidates.length <= 1) {
+        final place = r.candidates.firstOrNull;
         state = VoiceState(
           heard: said,
-          result: VoiceOutcome(place: null, origin: r.origin, reply: r.message),
+          searchId: r.searchId,
+          result: VoiceOutcome(
+            place: place,
+            origin: r.origin,
+            routeOption: r.routeOption,
+            reply: r.message,
+          ),
         );
+        _record(r.searchId, place);
         return;
       }
       state = VoiceState(
@@ -216,11 +225,14 @@ class VoiceController extends Notifier<VoiceState> {
     final id = outcome.place!.id;
     if (!(s.candidates ?? []).any((c) => c.id == id)) return;
     state = VoiceState(heard: s.heard, searchId: s.searchId, result: outcome);
-    final searchId = s.searchId;
-    if (searchId == null) return;
+    _record(s.searchId, outcome.place);
+  }
+
+  void _record(int? searchId, SearchCandidate? place) {
+    if (searchId == null || place == null) return;
     ref
         .read(searchRepositoryProvider)
-        .select(searchId: searchId, candidateId: id)
+        .select(searchId: searchId, candidateId: place.id)
         .ignore();
   }
 }

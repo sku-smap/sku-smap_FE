@@ -8,11 +8,21 @@ import '../../../campus/state/trip_controller.dart';
 import '../../data/candidate_place.dart';
 import '../../data/search_models.dart';
 import '../../state/search_flow_controller.dart';
+import '../../../home/state/home_notice.dart';
 import '../../state/voice_controller.dart';
 import '../search_routes.dart';
 import '../search_tokens.dart';
 import '../widgets/place_picker.dart';
 import '../widgets/voice_view.dart';
+
+// Toast after a route sentence, by which ends it settled
+String routeSearchNotice({required bool from, required bool to}) =>
+    switch ((from, to)) {
+      (true, true) => '경로 설정이 완료되었습니다.',
+      (false, true) => '출발지를 인식하지 못했습니다. 출발지를 입력해주세요.',
+      (true, false) => '도착지를 인식하지 못했습니다. 도착지를 입력해주세요.',
+      (false, false) => '출발지·도착지를 인식하지 못했습니다. 다시 말하거나 입력해주세요.',
+    };
 
 class SearchScreen extends ConsumerStatefulWidget {
   const SearchScreen({super.key, this.query = const {}});
@@ -94,25 +104,19 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
       }
       final option = outcome.routeOption;
       if (option != null) trip.applyRouteOption(option);
-      final reply = outcome.reply;
-      if (reply != null) flowController.toast(reply);
-      if (flow.target == PickTarget.from && place != null) {
-        chooseFrom(place);
+      if (flow.target == PickTarget.from) {
+        final reply = outcome.reply;
+        if (reply != null) flowController.toast(reply);
+        if (place != null) chooseFrom(place);
         return;
       }
-      if (origin != null) trip.setFrom(placeOfCandidate(origin));
-      // Only the start was named: ask where to go next
-      if (place == null) {
-        flowController.pick(PickTarget.to);
-        return;
-      }
-      final from = ref.read(tripProvider).from;
-      trip.setTo(place);
-      if (from != null && from.id != place.id) {
-        toRouteCard();
-      } else {
-        flowController.pick(PickTarget.from);
-      }
+      // A route sentence replaces both ends and says what it could not find
+      final from = origin == null ? null : placeOfCandidate(origin);
+      trip.setEnds(from: from, to: place);
+      ref
+          .read(homeNoticeProvider.notifier)
+          .show(routeSearchNotice(from: from != null, to: place != null));
+      toRouteCard();
     }
 
     return Scaffold(
