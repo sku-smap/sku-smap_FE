@@ -74,6 +74,7 @@ Future<_FakeVoice> _pump(
   WidgetTester tester,
   String initial, {
   RouteRepository? routes,
+  List<String>? photos,
 }) async {
   tester.view.physicalSize = const Size(390, 844);
   tester.view.devicePixelRatio = 1;
@@ -85,7 +86,10 @@ Future<_FakeVoice> _pump(
       overrides: [
         routerProvider.overrideWithValue(router),
         guideVoiceProvider.overrideWithValue(voice),
-        photoImageProvider.overrideWithValue((_) => _pixel),
+        photoImageProvider.overrideWithValue((url) {
+          photos?.add(url);
+          return _pixel;
+        }),
         if (routes != null) routeRepositoryProvider.overrideWithValue(routes),
       ],
       child: MaterialApp.router(routerConfig: router),
@@ -182,14 +186,16 @@ void main() {
     expect(voice.spoken.length, before);
   });
 
-  testWidgets('전체 경로에 예상 시간과 단계 목록을 보여준다 (N-11)', (tester) async {
+  testWidgets('전체 경로에 단계 수와 단계 목록을 보여주고 시간은 없다 (N-11)', (tester) async {
     await _pump(tester, _toGs25);
 
     await _tap(tester, find.bySemanticsLabel('전체 단계 보기'));
     expect(find.text('단계별 안내 · 8단계'), findsOneWidget);
     expect(find.text('출발'), findsOneWidget);
     expect(find.text('도착'), findsOneWidget);
-    expect(find.textContaining('(예상)'), findsOneWidget);
+    expect(find.textContaining('도보'), findsOneWidget);
+    expect(find.textContaining('(예상)'), findsNothing);
+    expect(find.textContaining('분'), findsNothing);
 
     await _tap(tester, find.bySemanticsLabel('닫기'));
     expect(find.text('단계별 안내 · 8단계'), findsNothing);
@@ -288,5 +294,22 @@ void main() {
     await tester.pump();
     await tester.pump();
     expect(find.text('1 / 8단계'), findsOneWidget);
+  });
+
+  testWidgets('단계 목록은 서버 썸네일, 없으면 원본 사진을 쓴다', (tester) async {
+    final photos = <String>[];
+    await _pump(tester, _toGs25, photos: photos);
+    registerSpots([
+      spotById['gate_front']!.withPhoto(
+        'https://cdn.test/gate.jpg',
+        thumb: 'https://cdn.test/gate_t.jpg',
+      ),
+      spotById['parking_3way']!.withPhoto('https://cdn.test/parking.jpg'),
+    ]);
+    addTearDown(resetSpots);
+
+    await _tap(tester, find.bySemanticsLabel('전체 단계 보기'));
+    expect(photos, contains('https://cdn.test/gate_t.jpg'));
+    expect(photos, contains('https://cdn.test/parking.jpg'));
   });
 }

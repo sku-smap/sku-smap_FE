@@ -37,12 +37,15 @@ abstract final class CampusMapDto {
     );
   }
 
-  // Node with its photo URL, or null without an id or a title
-  static PanoSpot? spotFrom(Map<String, dynamic> node) {
-    final spot = NodeDto.fromJson(node).toModel();
-    final photo = (node['imageUrl'] as String?)?.trim();
-    return spot?.withPhoto(photo == null || photo.isEmpty ? null : photo);
+  static String? _url(Object? raw) {
+    final url = (raw as String?)?.trim();
+    return url == null || url.isEmpty ? null : url;
   }
+
+  // Node with its photo and thumbnail URLs, or null without an id or a title
+  static PanoSpot? spotFrom(Map<String, dynamic> node) => NodeDto.fromJson(node)
+      .toModel()
+      ?.withPhoto(_url(node['imageUrl']), thumb: _url(node['thumbnailUrl']));
 
   // Directed edge or route segment; unknown move types walk
   static (String, RouteLink)? edgeFrom(Map<String, dynamic> e) {
@@ -50,6 +53,7 @@ abstract final class CampusMapDto {
     final to = e['toNodeId'] as String?;
     if (from == null || to == null || from.isEmpty || to.isEmpty) return null;
     final note = (e['description'] as String?)?.trim();
+    final yaw = (e['arrowYawDeg'] as num?)?.toDouble();
     return (
       from,
       RouteLink(
@@ -57,6 +61,7 @@ abstract final class CampusMapDto {
         via: _via[e['moveType']] ?? Via.walk,
         note: note == null || note.isEmpty ? null : note,
         fromServer: true,
+        yaw: yaw == null ? null : (yaw % 360 + 360) % 360,
       ),
     );
   }

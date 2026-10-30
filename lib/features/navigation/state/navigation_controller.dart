@@ -206,7 +206,11 @@ class NavigationController extends Notifier<NavigationState>
   // Route nodes and segments join the graph so photos and arrows resolve
   void _merge(RoutePlan plan) {
     registerSpots(plan.spots);
-    registerLinks(plan.links);
+    // A merged multi-floor elevator segment is not a real edge between photos
+    registerLinks([
+      for (final link in plan.links)
+        if (link.$2.via != Via.elevator) link,
+    ]);
     if (plan.path.any((id) => !spotById.containsKey(id))) {
       throw const ParseException('경로에 모르는 지점이 있어요.');
     }

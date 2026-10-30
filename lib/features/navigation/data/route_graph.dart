@@ -1,5 +1,3 @@
-import 'dart:math' as math;
-
 import 'package:flutter/foundation.dart';
 
 import '../../campus/data/campus_directory.dart';
@@ -17,10 +15,18 @@ Map<String, List<RouteLink>> _bundledLinks() => {
 // Bundled links plus campus map edges the app did not have
 final _links = _bundledLinks();
 
+// Server edges join the graph; a known link keeps its app data but takes
+// the server's arrow direction
 void registerLinks(Iterable<(String from, RouteLink link)> links) {
   for (final (from, link) in links) {
     final out = _links.putIfAbsent(from, () => []);
-    if (!out.any((l) => l.to == link.to)) out.add(link);
+    final i = out.indexWhere((l) => l.to == link.to);
+    final yaw = link.yaw;
+    if (i < 0) {
+      out.add(link);
+    } else if (yaw != null) {
+      out[i] = out[i].withYaw(yaw);
+    }
   }
 }
 
@@ -184,49 +190,31 @@ String instruction(String a, String b, [RouteLink? leg]) {
   }
 }
 
-const _spread = [0.0, 180.0, 90.0, -90.0, 45.0, -45.0, 135.0, -135.0];
-
 // Key of the photo arrow for a link, through any hidden photo in between
 String linkYawKey(String from, String to) {
   final through = linksOf(from).where((l) => l.to == to).firstOrNull?.through;
   return '$from>${through ?? to}';
 }
 
-// A measured or team-fixed photo direction exists for this link
-bool hasKnownYaw(
-  String from,
-  String to, [
-  Map<String, double> overrides = const {},
-]) {
-  final key = linkYawKey(from, to);
-  return overrides.containsKey(key) || linkYaw.containsKey(key);
-}
-
-// Arrow direction in the photo (degrees, 0 = photo center)
-double linkYawOf(
+// Arrow direction in the photo (degrees, 0 = photo center): a team fix, then
+// the server's, then the app's measured one; null means unknown, never 0
+double? linkYawOf(
   String from,
   String to, [
   Map<String, double> overrides = const {},
 ]) {
   final through = linksOf(from).where((l) => l.to == to).firstOrNull?.through;
   if (through != null) return linkYawOf(from, through, overrides);
-  final known = overrides['$from>$to'] ?? linkYaw['$from>$to'];
-  if (known != null) return known;
-  final raw = _links[from] ?? const <RouteLink>[];
-  final i = raw.indexWhere((l) => l.to == to);
-  return _spread[(i < 0 ? 0 : i) % _spread.length];
+  final key = '$from>$to';
+  final server = (_links[from] ?? const <RouteLink>[])
+      .where((l) => l.to == to)
+      .firstOrNull
+      ?.yaw;
+  return overrides[key] ?? server ?? linkYaw[key];
 }
 
-const _metersPerPct = 3.37;
-const _walkSpeed = 1.1;
-const _minStepM = 12.0;
-const _elevatorSec = 60;
-const _stairsSec = 25;
-
-// Rough distance and time from map coordinates
+// Stairs and elevator rides on the way; the server gives no time or distance
 RouteStats routeStats(List<String> path, [List<RouteLink> legs = const []]) {
-  var meters = 0.0;
-  var extraSec = 0;
   var elevators = 0;
   var stairs = 0;
   for (var i = 1; i < path.length; i++) {
@@ -237,27 +225,11 @@ RouteStats routeStats(List<String> path, [List<RouteLink> legs = const []]) {
         : edgeBetween(a.id, b.id)?.via;
     if (via == Via.elevator || (via == null && a.floor != b.floor)) {
       elevators++;
-      extraSec += _elevatorSec;
-      continue;
-    }
-    if (via == Via.stairs) {
+    } else if (via == Via.stairs) {
       stairs++;
-      extraSec += _stairsSec;
-      continue;
     }
-    final (ax, ay, bx, by) = (a.x, a.y, b.x, b.y);
-    final d = ax == null || ay == null || bx == null || by == null
-        ? 0.0
-        : math.sqrt(math.pow(bx - ax, 2) + math.pow(by - ay, 2));
-    meters += math.max(d * _metersPerPct, _minStepM);
   }
-  final minutes = math.max(1, ((meters / _walkSpeed + extraSec) / 60).round());
-  return RouteStats(
-    meters: (meters / 10).round() * 10,
-    minutes: minutes,
-    elevators: elevators,
-    stairs: stairs,
-  );
+  return RouteStats(elevators: elevators, stairs: stairs);
 }
 
 List<FloorStop> floorsOf(String building) =>

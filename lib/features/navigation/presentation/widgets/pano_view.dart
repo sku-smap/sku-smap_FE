@@ -151,7 +151,7 @@ class _PanoViewState extends ConsumerState<PanoView> {
                   ),
                 for (final l in links)
                   Hotspot(
-                    longitude: l.yaw,
+                    longitude: l.yaw!,
                     latitude: -17,
                     width: LinkArrow.width,
                     height: LinkArrow.height,

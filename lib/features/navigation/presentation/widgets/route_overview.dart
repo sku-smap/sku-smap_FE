@@ -280,6 +280,18 @@ class _TailPainter extends CustomPainter {
   bool shouldRepaint(_TailPainter old) => old.color != color;
 }
 
+// Server thumbnail, else the full photo decoded at list size, else the
+// bundled thumbnail
+ImageProvider _thumbOf(ImageProvider Function(String url) photo, String id) {
+  final spot = spotById[id];
+  final url = spot?.thumbUrl ?? spot?.imageUrl;
+  return url == null
+      ? photo(NavigationAssets.thumb(id))
+      : ResizeImage(photo(url), width: _thumbWidth);
+}
+
+const _thumbWidth = 320;
+
 class _Sheet extends ConsumerWidget {
   const _Sheet({
     required this.route,
@@ -296,11 +308,8 @@ class _Sheet extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final stats = routeStats(route.path, route.legs);
-    final distance = stats.meters >= 1000
-        ? '${(stats.meters / 1000).toStringAsFixed(1)}km'
-        : '${stats.meters}m';
     final extras = [
-      '약 $distance',
+      '도보',
       if (stats.stairs > 0) '계단 ${stats.stairs}번',
       if (stats.elevators > 0) '엘리베이터 ${stats.elevators}번',
     ];
@@ -336,24 +345,16 @@ class _Sheet extends ConsumerWidget {
                   children: [
                     Text.rich(
                       TextSpan(
-                        text: '${stats.minutes}',
+                        text: '${route.last}',
                         children: [
                           const WidgetSpan(child: SizedBox(width: 2)),
-                          TextSpan(text: '분', style: NavText.routeUnit),
+                          TextSpan(text: '단계', style: NavText.routeUnit),
                         ],
                       ),
-                      style: NavText.routeTime,
+                      style: NavText.routeTotal,
                     ),
                     const SizedBox(height: 4),
-                    Text.rich(
-                      TextSpan(
-                        text: '도보 · ${extras.join(' · ')} ',
-                        children: [
-                          TextSpan(text: '(예상)', style: NavText.routeGuess),
-                        ],
-                      ),
-                      style: NavText.routeExtra,
-                    ),
+                    Text(extras.join(' · '), style: NavText.routeExtra),
                   ],
                 ),
               ),
@@ -407,7 +408,7 @@ class _Sheet extends ConsumerWidget {
           ),
           for (final (i, id) in route.path.indexed)
             _StepRow(
-              image: photo(NavigationAssets.thumb(id)),
+              image: _thumbOf(photo, id),
               title: i == route.last
                   ? '도착 · ${route.to.label}'
                   : instruction(id, route.path[i + 1], route.legAt(i)),
