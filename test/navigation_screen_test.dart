@@ -90,6 +90,7 @@ Future<_FakeVoice> _pump(
           photos?.add(url);
           return _pixel;
         }),
+        photoPrefetchProvider.overrideWithValue((_) {}),
         if (routes != null) routeRepositoryProvider.overrideWithValue(routes),
       ],
       child: MaterialApp.router(routerConfig: router),
