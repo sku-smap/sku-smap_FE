@@ -171,6 +171,7 @@ class PanoSpot {
     this.estimated = false,
     this.roomList,
     this.imageUrl,
+    this.thumbUrl,
   });
 
   final String id;
@@ -187,6 +188,9 @@ class PanoSpot {
   final bool? roomList;
   final String? imageUrl;
 
+  // Small list photo; may be missing even when the full photo exists
+  final String? thumbUrl;
+
   bool get outdoor => building == 'outdoor';
 
   // Spots only the server knows have no map position yet
@@ -194,7 +198,7 @@ class PanoSpot {
 
   CampusPlace get spot => CampusPlace(id: id, name: title);
 
-  PanoSpot withPhoto(String? url) => PanoSpot(
+  PanoSpot withPhoto(String? url, {String? thumb}) => PanoSpot(
     id: id,
     title: title,
     building: building,
@@ -208,6 +212,7 @@ class PanoSpot {
     estimated: estimated,
     roomList: roomList,
     imageUrl: url,
+    thumbUrl: thumb,
   );
 
   // Server name, building, floor and photo over the bundled map data; a
@@ -226,5 +231,6 @@ class PanoSpot {
     estimated: estimated,
     roomList: roomList,
     imageUrl: server.imageUrl ?? imageUrl,
+    thumbUrl: server.imageUrl != null ? server.thumbUrl : thumbUrl,
   );
 }

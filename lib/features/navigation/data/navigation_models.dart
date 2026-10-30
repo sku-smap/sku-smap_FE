@@ -18,6 +18,7 @@ class RouteLink {
     this.note,
     this.through,
     this.fromServer = false,
+    this.yaw,
   });
 
   final String to;
@@ -25,8 +26,11 @@ class RouteLink {
   final String? note;
   final String? through;
 
-  // Added from the campus map; no photo direction is known for it
+  // Added from the campus map or a route
   final bool fromServer;
+
+  // Arrow direction in the start photo (0–360°); null when unknown, unlike 0
+  final double? yaw;
 
   RouteLink copyWith({required Via via, required String through}) => RouteLink(
     to: to,
@@ -34,6 +38,16 @@ class RouteLink {
     note: note,
     through: through,
     fromServer: fromServer,
+    yaw: yaw,
+  );
+
+  RouteLink withYaw(double yaw) => RouteLink(
+    to: to,
+    via: via,
+    note: note,
+    through: through,
+    fromServer: fromServer,
+    yaw: yaw,
   );
 }
 
@@ -114,15 +128,8 @@ class ActiveRoute {
 }
 
 class RouteStats {
-  const RouteStats({
-    required this.meters,
-    required this.minutes,
-    required this.elevators,
-    required this.stairs,
-  });
+  const RouteStats({required this.elevators, required this.stairs});
 
-  final int meters;
-  final int minutes;
   final int elevators;
   final int stairs;
 }

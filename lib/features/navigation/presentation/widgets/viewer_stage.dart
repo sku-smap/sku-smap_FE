@@ -31,9 +31,10 @@ List<ViewLink> viewLinks(
         final to = viaElevator ? next! : l.to;
         final target = spotById[to]!;
         final floor = target.floor ?? '';
+        final yaw = linkYawOf(node, l.to, yawOverrides);
         return ViewLink(
           to: to,
-          yaw: linkYawOf(node, l.to, yawOverrides),
+          yaw: yaw,
           label: viaElevator ? '엘리베이터 → $floor' : target.title,
           sub: viaElevator
               ? target.title
@@ -43,7 +44,6 @@ List<ViewLink> viewLinks(
               ? '${l.via.label} → $floor'
               : l.via.label,
           primary: to == next,
-          chip: l.fromServer && !hasKnownYaw(node, l.to, yawOverrides),
         );
       }(),
   ];

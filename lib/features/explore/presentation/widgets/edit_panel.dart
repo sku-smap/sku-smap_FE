@@ -4,7 +4,7 @@ import '../../../home/presentation/widgets/pressable.dart';
 import '../../../navigation/presentation/navigation_tokens.dart';
 import '../explore_tokens.dart';
 
-typedef EditLink = ({String to, String label, double yaw});
+typedef EditLink = ({String to, String label, double? yaw});
 
 // Team-only panel: pick a link, then tap where it shows in the photo
 class EditPanel extends StatelessWidget {
@@ -47,7 +47,10 @@ class EditPanel extends StatelessWidget {
             children: [
               for (final l in links)
                 _LinkChip(
-                  label: '${l.label} ${l.yaw.round()}°',
+                  label: switch (l.yaw) {
+                    final yaw? => '${l.label} ${yaw.round()}°',
+                    null => '${l.label} 방향 없음',
+                  },
                   selected: l.to == selected,
                   onTap: () => onSelect(l.to),
                 ),

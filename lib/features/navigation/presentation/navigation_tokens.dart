@@ -74,6 +74,9 @@ abstract final class NavLayout {
   static const toolButton = 38.0;
 
   static const miniCasing = 9.8;
+
+  // Halo around a building pin when the spot itself has no map position
+  static const miniHalo = 36.0;
   static const miniLine = 5.6;
   static const overviewCasing = 12.0;
   static const overviewLine = 8.0;
@@ -184,7 +187,7 @@ abstract final class NavText {
   );
   static final loading = _base.copyWith(fontSize: 14, color: Colors.white);
 
-  static final routeTime = _w(
+  static final routeTotal = _w(
     _base.copyWith(fontSize: 34, height: 39.1 / 34, letterSpacing: -0.5),
     800,
   );
@@ -195,14 +198,6 @@ abstract final class NavText {
   static final routeExtra = _w(
     _base.copyWith(fontSize: 14, height: 16.8 / 14, color: NavColors.muted),
     600,
-  );
-  static final routeGuess = _w(
-    _base.copyWith(
-      fontSize: 14,
-      height: 16.8 / 14,
-      color: NavColors.placeholder,
-    ),
-    500,
   );
   static final routeEnd = _w(
     _base.copyWith(fontSize: 14, height: 16.8 / 14),
