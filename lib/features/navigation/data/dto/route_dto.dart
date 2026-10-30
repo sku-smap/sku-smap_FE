@@ -36,10 +36,14 @@ abstract final class RouteDto {
       // A multi-floor elevator ride is one step
       if (l.via == Via.elevator && legs.lastOrNull?.via == Via.elevator) {
         path.last = l.to;
+        // The server gives the merged ride its first edge's direction
+        final first = legs.last;
         legs.last = RouteLink(
           to: l.to,
           via: Via.elevator,
-          note: legs.last.note,
+          note: first.note,
+          fromServer: true,
+          yaw: first.yaw,
         );
       } else {
         path.add(l.to);

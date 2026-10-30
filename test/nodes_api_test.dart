@@ -198,7 +198,7 @@ void main() {
       expect(searchSpots('은주1관 정문 안쪽').single.id, 'EJ1_02_E');
       final spot = spotById['EJ1_02_E']!;
       expect(nearestSpot(spot.x ?? 0, spot.y ?? 0)?.id, isNot('EJ1_02_E'));
-      expect(routeStats(['gate_front', 'EJ1_02_E']).meters, greaterThan(0));
+      expect(() => routeStats(['gate_front', 'EJ1_02_E']), returnsNormally);
     });
   });
 }

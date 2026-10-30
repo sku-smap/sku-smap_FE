@@ -11,17 +11,18 @@ class ViewLink {
     required this.label,
     this.sub,
     this.primary = false,
-    this.chip = false,
   });
 
   final String to;
-  final double yaw;
+
+  // Null when the direction is unknown
+  final double? yaw;
   final String label;
   final String? sub;
   final bool primary;
 
   // Direction unknown: offer it as a chip under the photo, not an arrow
-  final bool chip;
+  bool get chip => yaw == null;
 }
 
 // Arrow lying on the ground with chevrons flowing forward

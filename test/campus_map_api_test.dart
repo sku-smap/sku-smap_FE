@@ -14,6 +14,7 @@ import 'package:smap/features/campus/data/campus_map_repository.dart';
 import 'package:smap/features/campus/data/campus_models.dart';
 import 'package:smap/features/campus/data/dto/campus_map_dto.dart';
 import 'package:smap/features/campus/state/node_providers.dart';
+import 'package:smap/features/campus/data/mock/route_graph_mock.dart';
 import 'package:smap/features/navigation/data/navigation_models.dart';
 import 'package:smap/features/navigation/data/route_graph.dart';
 import 'package:smap/features/navigation/presentation/widgets/viewer_stage.dart';
@@ -141,6 +142,80 @@ void main() {
 
     test('nodes·edges가 없어도 빈 지도로 읽는다', () {
       expect(CampusMapDto.fromJson(<String, Object?>{}).isEmpty, isTrue);
+    });
+  });
+
+  group('화살표 방향·썸네일', () {
+    test('방향값은 0과 없음을 구분하고 0~360으로 맞춘다', () {
+      (String, RouteLink)? edge(Object? yaw) =>
+          CampusMapDto.edgeFrom({..._edge('a', 'b'), 'arrowYawDeg': yaw});
+      expect(edge(0)!.$2.yaw, 0);
+      expect(edge(null)!.$2.yaw, isNull);
+      expect(edge(90)!.$2.yaw, 90);
+      expect(edge(360.0)!.$2.yaw, 0);
+      expect(edge(-10)!.$2.yaw, 350);
+    });
+
+    test('썸네일 URL을 읽고 없으면 비운다', () {
+      final spot = CampusMapDto.spotFrom({
+        ..._node('n1', imageUrl: 'https://cdn.test/p.jpg'),
+        'thumbnailUrl': 'https://cdn.test/t.jpg',
+      })!;
+      expect(spot.thumbUrl, 'https://cdn.test/t.jpg');
+      expect(
+        CampusMapDto.spotFrom({..._node('n2'), 'thumbnailUrl': ' '})!.thumbUrl,
+        isNull,
+      );
+    });
+
+    test('방향은 보정값, 서버값, 앱 측정값 순서이고 모르면 칩이다', () {
+      final measured = linkYaw.entries.firstWhere((e) {
+        final [from, to] = e.key.split('>');
+        return routeLinks[from]?.any((l) => l.to == to) ?? false;
+      });
+      final [from, to] = measured.key.split('>');
+
+      registerLinks([
+        (from, RouteLink(to: to, via: Via.walk, fromServer: true, yaw: 12)),
+      ]);
+      expect(linkYawOf(from, to), 12, reason: 'server over measured');
+      expect(linksOf(from).firstWhere((l) => l.to == to).fromServer, isFalse);
+      expect(linkYawOf(from, to, {measured.key: 200}), 200);
+
+      registerLinks([
+        (from, RouteLink(to: to, via: Via.walk, fromServer: true)),
+      ]);
+      expect(linkYawOf(from, to), 12, reason: 'a missing value keeps the old');
+
+      registerLinks([
+        ('gate_front', const RouteLink(to: 'n_zero', via: Via.walk, yaw: 0)),
+        ('gate_front', const RouteLink(to: 'n_none', via: Via.walk)),
+      ]);
+      registerSpots([
+        const PanoSpot(id: 'n_zero', title: '영도', building: 'outdoor'),
+        const PanoSpot(id: 'n_none', title: '모름', building: 'outdoor'),
+      ]);
+      final links = viewLinks('gate_front', null);
+      final zero = links.firstWhere((l) => l.to == 'n_zero');
+      expect((zero.yaw, zero.chip), (0, false));
+      expect(links.firstWhere((l) => l.to == 'n_none').chip, isTrue);
+    });
+
+    test('앱 데이터 연결도 방향을 모르면 임의 배치 없이 칩이다', () {
+      final unknown = [
+        for (final MapEntry(:key, :value) in routeLinks.entries)
+          for (final l in value)
+            if (!linkYaw.containsKey('$key>${l.to}') &&
+                spotById[l.to]?.hidden != true &&
+                spotById[key]?.hidden != true)
+              (key, l.to),
+      ].first;
+      final link = viewLinks(
+        unknown.$1,
+        null,
+      ).firstWhere((l) => l.to == unknown.$2);
+      expect(link.yaw, isNull);
+      expect(link.chip, isTrue);
     });
   });
 

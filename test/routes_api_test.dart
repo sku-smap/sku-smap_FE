@@ -166,6 +166,19 @@ void main() {
       expect(plan.links, hasLength(4), reason: 'every segment joins the graph');
     });
 
+    test('합친 엘리베이터 단계는 첫 구간의 방향을 쓴다', () {
+      final plan = _plan(
+        _route([
+          {..._seg('a', 'lift1'), 'arrowYawDeg': 30},
+          {..._seg('lift1', 'lift2', 'ELEVATOR'), 'arrowYawDeg': 0},
+          {..._seg('lift2', 'lift3', 'ELEVATOR'), 'arrowYawDeg': 270},
+        ]),
+        'a',
+        'lift3',
+      )!;
+      expect(plan.legs.map((l) => l.yaw), [30, 0]);
+    });
+
     test('구간이 없으면 길 없음, 출발과 도착이 같으면 한 지점이다', () {
       expect(_plan(_route([]), 'a', 'b'), isNull);
       expect(_plan(<String, Object?>{}, 'a', 'b'), isNull);
@@ -371,6 +384,27 @@ void main() {
       c.invalidate(navigationProvider(entry));
       await pumpEventQueue();
       expect(c.read(navigationProvider(entry)).error, isNotNull);
+    });
+
+    test('합친 엘리베이터 구간은 사진 연결로 넣지 않는다', () async {
+      final entry = _entry();
+      final c = await start(entry);
+      routes.answer = (from, to) async => _plan(
+        _route([
+          _seg(from, 'parking_3way'),
+          _seg('parking_3way', to, 'ELEVATOR'),
+        ]),
+        from,
+        to,
+      );
+      c.invalidate(navigationProvider(entry));
+      await pumpEventQueue();
+      expect(c.read(navigationProvider(entry)).route, isNotNull);
+      expect(
+        linksOf('parking_3way')
+            .where((l) => l.to == 'road_yudam_3way' && l.via == Via.elevator),
+        isEmpty,
+      );
     });
 
     test('조회가 실패하면 오류를 보여주고 다시 시도한다', () async {

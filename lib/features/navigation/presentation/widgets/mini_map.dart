@@ -63,6 +63,8 @@ class _Stage extends StatelessWidget {
     ];
     final target = r == null ? null : spotById[r.to.node];
     final ground = here.level == MapLevel.ground;
+    // A server spot without coordinates still shows its building's pin
+    final building = here.onMap ? null : buildingById[here.building];
     return AspectRatio(
       aspectRatio: NavLayout.mapAspect,
       child: ClipRRect(
@@ -95,6 +97,13 @@ class _Stage extends StatelessWidget {
                     _Dot(at: at(target), radius: 3, size: 12),
                   if (here.onMap)
                     _Dot(at: at(here), radius: 8, size: 16)
+                  else if (building != null)
+                    _BuildingMark(
+                      at: Offset(
+                        building.mapX / 100 * size.maxWidth,
+                        building.mapY / 100 * size.maxHeight,
+                      ),
+                    )
                   else
                     const Center(child: _Chip('지도 위치 준비 중')),
                   Positioned(
@@ -151,6 +160,44 @@ class _Dot extends StatelessWidget {
           color: NavColors.blue,
           border: Border.all(color: NavColors.surface, width: 3),
           borderRadius: BorderRadius.circular(radius),
+        ),
+      ),
+    );
+  }
+}
+
+// Building highlighted with a soft halo and the current-spot dot at its pin
+class _BuildingMark extends StatelessWidget {
+  const _BuildingMark({required this.at});
+
+  final Offset at;
+
+  @override
+  Widget build(BuildContext context) {
+    const halo = NavLayout.miniHalo;
+    return Positioned(
+      left: at.dx - halo / 2,
+      top: at.dy - halo / 2,
+      child: Semantics(
+        label: '현재 건물',
+        child: Container(
+          width: halo,
+          height: halo,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: NavColors.blue.withValues(alpha: 0.18),
+            border: Border.all(color: NavColors.blue.withValues(alpha: 0.45)),
+            shape: BoxShape.circle,
+          ),
+          child: Container(
+            width: 16,
+            height: 16,
+            decoration: BoxDecoration(
+              color: NavColors.blue,
+              border: Border.all(color: NavColors.surface, width: 3),
+              shape: BoxShape.circle,
+            ),
+          ),
         ),
       ),
     );

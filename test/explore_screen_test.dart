@@ -239,7 +239,7 @@ void main() {
     await _settleToast(tester);
   });
 
-  testWidgets('서버에만 있는 지점은 지도 위치 준비 중과 연결 없음 안내를 보여준다', (tester) async {
+  testWidgets('서버에만 있는 지점은 미니맵에 건물을 강조하고 연결 없음 안내를 보여준다', (tester) async {
     addTearDown(resetSpots);
     registerSpots(const [
       PanoSpot(
@@ -252,7 +252,8 @@ void main() {
     await _pump(tester, '/explore', launch: {'from': 'EJ1_02_E'});
 
     expect(find.text('은주1관 2층 동쪽'), findsNWidgets(2));
-    expect(find.text('지도 위치 준비 중'), findsOneWidget);
+    expect(find.bySemanticsLabel('현재 건물'), findsOneWidget);
+    expect(find.text('지도 위치 준비 중'), findsNothing);
     expect(find.text('이 지점은 아직 이동 연결이 없어요'), findsOneWidget);
     await _settleToast(tester);
 
