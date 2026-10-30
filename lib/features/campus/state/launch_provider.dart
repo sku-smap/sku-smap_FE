@@ -22,12 +22,11 @@ class LaunchEntry {
     this.wetKind,
     this.demoClosures = false,
     this.demoReports = false,
-    this.onCampus = false,
     this.edit = false,
   });
 
   // ?src=nfc&from=, ?to=, ?weather=rain, ?closures=demo, ?reports=demo,
-  // ?location=campus, ?edit=1
+  // ?edit=1
   factory LaunchEntry.fromQuery(Map<String, String> q) => LaunchEntry(
     from: q['from'],
     to: q['to'],
@@ -35,7 +34,6 @@ class LaunchEntry {
     wetKind: WetKind.values.where((k) => k.name == q['weather']).firstOrNull,
     demoClosures: q['closures'] == 'demo',
     demoReports: q['reports'] == 'demo',
-    onCampus: q['location'] == 'campus',
     edit: q['edit'] == '1',
   );
 
@@ -45,7 +43,6 @@ class LaunchEntry {
   final WetKind? wetKind;
   final bool demoClosures;
   final bool demoReports;
-  final bool onCampus;
   final bool edit;
 }
 

@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:panorama_viewer/panorama_viewer.dart';
@@ -170,7 +172,12 @@ class _PanoViewState extends ConsumerState<PanoView> {
             Positioned(
               left: 16,
               right: 16,
-              bottom: NavLayout.chipBottom,
+              bottom:
+                  NavLayout.chipBottom +
+                  math.max(
+                    0,
+                    MediaQuery.paddingOf(context).bottom - NavLayout.cardInset,
+                  ),
               child: _LinkChips(links: chips, onNavigate: widget.onNavigate),
             ),
           if (_loading) const Center(child: _Loading()),

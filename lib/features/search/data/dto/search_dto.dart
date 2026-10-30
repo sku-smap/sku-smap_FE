@@ -37,6 +37,25 @@ abstract final class SearchDto {
     );
   }
 
+  // RouteSearchResponseDTO: destination candidates plus the top start; a
+  // sentence naming only the start has no destination candidates
+  static SearchResult routeResultFrom(Object? data) {
+    final json = data! as Map<String, dynamic>;
+    SearchResult? part(Object? raw, SearchTarget target) =>
+        raw == null ? null : resultFrom(raw, target);
+    final to = part(json['destination'], SearchTarget.destination);
+    final from = part(json['origin'], SearchTarget.origin);
+    return SearchResult(
+      target: SearchTarget.destination,
+      searchId: to?.searchId,
+      transcript: _text(json['transcript']) ?? to?.transcript,
+      message: _text(json['message']) ?? to?.message,
+      routeOption: to?.routeOption,
+      candidates: to?.candidates ?? const [],
+      origin: from?.candidates.firstOrNull,
+    );
+  }
+
   // Candidate, or null without an id, a node or a name
   static SearchCandidate? candidateFrom(Map<String, dynamic> json) {
     final id = _text(json['candidateId']);

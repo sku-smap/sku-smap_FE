@@ -23,13 +23,12 @@ void main() {
       'weather': 'snow',
       'closures': 'demo',
       'reports': 'demo',
-      'location': 'campus',
       'edit': '1',
     });
     expect(launch.nfcPlace, '버스정류장');
     expect(launch.wetKind, WetKind.snow);
     expect(launch.demoClosures && launch.demoReports, isTrue);
-    expect(launch.onCampus && launch.edit, isTrue);
+    expect(launch.edit, isTrue);
 
     final plain = LaunchEntry.fromQuery(const {'from': 'bus_stop'});
     expect(plain.nfcPlace, isNull);

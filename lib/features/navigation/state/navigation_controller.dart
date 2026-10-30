@@ -1,3 +1,5 @@
+import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -14,7 +16,9 @@ import '../../campus/state/place_providers.dart';
 import '../data/api_route_repository.dart';
 import '../data/guide_voice.dart';
 import '../data/mock_route_repository.dart';
+import '../data/navigation_assets.dart';
 import '../data/navigation_models.dart';
+import '../data/photo_cache.dart';
 import '../data/route_graph.dart';
 import '../data/route_plan.dart';
 import '../data/route_repository.dart';
@@ -27,16 +31,17 @@ typedef NavigationEntry = ({
   RouteOption? option,
 });
 
-// The route API takes one option: the searched one, else a picked mode over
-// indoor since stairs can rule a way out entirely
+// The route API takes one option: the searched one, else indoor-first when
+// its toggle is on (the mode buttons hide then), else the picked mode
 RouteOption routeOptionOf(NavigationEntry e) =>
     e.option ??
-    switch (e.mode) {
-      RouteMode.comfortable => RouteOption.comfortable,
-      RouteMode.shortest => RouteOption.shortest,
-      RouteMode.outdoor when e.indoor => RouteOption.indoorUndergroundFirst,
-      RouteMode.outdoor => RouteOption.outdoorFirst,
-    };
+    (e.indoor
+        ? RouteOption.indoorUndergroundFirst
+        : switch (e.mode) {
+            RouteMode.comfortable => RouteOption.comfortable,
+            RouteMode.shortest => RouteOption.shortest,
+            RouteMode.outdoor => RouteOption.outdoorFirst,
+          });
 
 class NavigationState {
   const NavigationState({
@@ -120,9 +125,11 @@ class NavigationController extends Notifier<NavigationState>
   NavigationState build() {
     bindToast();
     final voice = ref.read(guideVoiceProvider);
+    final photos = ref.read(photoCacheProvider);
     ref.onDispose(() {
       _run++;
       voice.stop();
+      photos.clear();
     });
     // Route once spots, places and closures are known
     final nodes = ref.watch(nodeCatalogProvider);
@@ -189,6 +196,7 @@ class NavigationController extends Notifier<NavigationState>
       );
       if (notice != null) scheduleToastHide();
       _speak(state);
+      _prefetchAhead();
     } on AppException catch (e) {
       if (run != _run) return;
       state = NavigationState(
@@ -234,7 +242,20 @@ class NavigationController extends Notifier<NavigationState>
       _reroute(node, route);
     } else {
       _speak(state);
+      _prefetchAhead();
     }
+  }
+
+  // Download the photos from the next step to the goal in order, so 다음
+  // shows one already fetched
+  void _prefetchAhead() {
+    final route = state.route;
+    final i = state.stepIdx;
+    if (route == null || i < 0) return;
+    ref.read(photoPrefetchProvider)([
+      for (final id in route.path.skip(i + 1))
+        spotById[id]?.imageUrl ?? NavigationAssets.pano(id),
+    ]);
   }
 
   // The old route stays until the new one arrives for this same spot
@@ -262,6 +283,7 @@ class NavigationController extends Notifier<NavigationState>
       );
       toast(_notice(state.route!) ?? '경로를 다시 찾았어요');
       _speak(state);
+      _prefetchAhead();
     } on AppException catch (e) {
       if (run != _run || state.node != node) return;
       toast(e.message);
@@ -311,6 +333,32 @@ final routeRepositoryProvider = Provider<RouteRepository>(
 final guideVoiceProvider = Provider<GuideVoice>((ref) => TtsGuideVoice());
 
 // Photos load from the storage bucket; tests swap in local images
-final photoImageProvider = Provider<ImageProvider Function(String url)>(
-  (ref) => NetworkImage.new,
+// Photo files over plain HTTPS; signed URLs carry their own access
+final photoFetchProvider = Provider<PhotoFetch>((ref) {
+  final dio = Dio(
+    BaseOptions(
+      responseType: ResponseType.bytes,
+      connectTimeout: const Duration(seconds: 15),
+      receiveTimeout: const Duration(seconds: 60),
+    ),
+  );
+  ref.onDispose(dio.close);
+  return (url) async =>
+      Uint8List.fromList((await dio.get<List<int>>(url)).data ?? const []);
+});
+
+final photoCacheProvider = Provider<PhotoCache>(
+  (ref) => PhotoCache(ref.watch(photoFetchProvider)),
 );
+
+// Tests swap this out so guidance never downloads in the background
+final photoPrefetchProvider = Provider<void Function(List<String> urls)>(
+  (ref) =>
+      (urls) => ref.read(photoCacheProvider).prefetch(urls).ignore(),
+);
+
+// Photos come through the cache; tests swap in local images
+final photoImageProvider = Provider<ImageProvider Function(String url)>((ref) {
+  final cache = ref.watch(photoCacheProvider);
+  return (url) => CachedPhoto(url, cache);
+});

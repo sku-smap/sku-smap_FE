@@ -78,13 +78,14 @@ void main() {
     expect(_pushed(tester), '/search?pick=from&to=r-yudam-303');
   });
 
-  testWidgets('NFC 출발지가 있으면 자주 찾는 곳을 고르자마자 길안내로 간다 (H-04·H-05)', (
-    tester,
-  ) async {
+  testWidgets('출발지가 있어도 도착지를 고르면 길찾기를 눌러야 길안내로 간다 (H-04·H-05)', (tester) async {
     await _pumpHome(tester, '/?src=nfc&from=bus_stop');
     expect(find.text('버스정류장'), findsOneWidget);
 
     await _tap(tester, find.text('본관').first);
+    expect(_pushed(tester), isNull);
+
+    await _tap(tester, find.text('길찾기'));
     expect(
       _pushed(tester),
       '/navigation?from=bus_stop&to=b-bonkwan&mode=outdoor',

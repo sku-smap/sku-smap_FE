@@ -44,6 +44,7 @@ Future<GoRouter> _launch(
         routerProvider.overrideWithValue(router),
         guideVoiceProvider.overrideWithValue(_SilentVoice()),
         photoImageProvider.overrideWithValue((_) => _pixel),
+        photoPrefetchProvider.overrideWithValue((_) {}),
       ],
       child: const SmapApp(),
     ),
@@ -87,11 +88,15 @@ Future<void> _typed(WidgetTester tester) async {
 }
 
 void main() {
-  testWidgets('NFC 진입 → 홈 출발지 → 자주 찾는 곳 → 길안내 → 뒤로 가면 상태 유지', (tester) async {
+  testWidgets('NFC 진입 → 홈 출발지 → 자주 찾는 곳 → 길찾기 → 길안내 → 뒤로 가면 상태 유지', (
+    tester,
+  ) async {
     final router = await _launch(tester, link: '/?src=nfc&from=bus_stop');
     expect(find.text('버스정류장'), findsOneWidget);
 
     await _tap(tester, find.text('본관').first);
+    expect(_location(router), '/?src=nfc&from=bus_stop');
+    await _tap(tester, find.text('길찾기'));
     expect(
       _location(router),
       startsWith('/navigation?from=bus_stop&to=b-bonkwan'),
@@ -106,7 +111,9 @@ void main() {
     await _settle(tester);
   });
 
-  testWidgets('지도 탭 → 둘러보기 → 여기서 출발 → 도착지 검색 → 길안내, 뒤로 가면 홈', (tester) async {
+  testWidgets('지도 탭 → 둘러보기 → 여기서 출발 → 도착지 검색 → 홈 → 길찾기, 뒤로 가면 홈', (
+    tester,
+  ) async {
     final router = await _launch(tester);
 
     await _tap(tester, find.bySemanticsLabel('지도'));
@@ -117,6 +124,8 @@ void main() {
     await tester.enterText(find.byType(TextField), '북악');
     await _typed(tester);
     await _tap(tester, find.text('북악관'));
+    expect(_location(router), '/');
+    await _tap(tester, find.text('길찾기'));
     expect(
       _location(router),
       '/navigation?from=gate_front&to=b-bukak&mode=outdoor',
@@ -130,7 +139,7 @@ void main() {
     await _settle(tester);
   });
 
-  testWidgets('홈 → 도착지 검색 → 출발지 선택 → 길안내', (tester) async {
+  testWidgets('홈 → 도착지 검색 → 출발지 선택 → 홈 → 길찾기 → 길안내', (tester) async {
     final router = await _launch(tester);
 
     await _tap(tester, find.text('건물, 부서, 교수님 연구실 검색'));
@@ -142,6 +151,8 @@ void main() {
     await tester.enterText(find.byType(TextField), '북악');
     await _typed(tester);
     await _tap(tester, find.text('북악관'));
+    expect(_location(router), '/');
+    await _tap(tester, find.text('길찾기'));
     expect(
       _location(router),
       '/navigation?from=b-bukak&to=b-yudam&mode=outdoor',

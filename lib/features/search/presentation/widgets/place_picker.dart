@@ -4,11 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/network/error_mapper.dart';
 import '../../../campus/data/campus_models.dart';
 import '../../../campus/state/place_providers.dart';
-import '../../data/location_service.dart';
 import '../../data/place_search.dart';
 import '../../data/search_models.dart';
 import '../../state/place_search_controller.dart';
-import '../../state/search_flow_controller.dart';
 import '../search_tokens.dart';
 import 'pick_map.dart';
 import 'picker_header.dart';
@@ -37,8 +35,6 @@ class PlacePicker extends ConsumerStatefulWidget {
 class _PlacePickerState extends ConsumerState<PlacePicker> {
   final _query = TextEditingController();
   final _searchKey = Object();
-  var _finding = false;
-  LocateError? _locateError;
   var _mapOpen = false;
   var _level = MapLevel.ground;
 
@@ -57,24 +53,6 @@ class _PlacePickerState extends ConsumerState<PlacePicker> {
   void dispose() {
     _query.dispose();
     super.dispose();
-  }
-
-  // Use the nearest photo spot to the current location as the start
-  Future<void> _findMe() async {
-    if (_finding) return;
-    setState(() {
-      _finding = true;
-      _locateError = null;
-    });
-    final result = await ref.read(locatorProvider).locate();
-    if (!mounted) return;
-    setState(() => _finding = false);
-    final spot = result.spot;
-    if (spot != null) {
-      widget.onPick(spot);
-    } else {
-      setState(() => _locateError = result.error);
-    }
   }
 
   @override
@@ -108,7 +86,7 @@ class _PlacePickerState extends ConsumerState<PlacePicker> {
                   style: SearchText.title,
                 ),
               ),
-              if (q.isEmpty && _isFrom) ..._hereOptions(),
+              if (q.isEmpty && _isFrom) ..._mapOptions(),
               if (q.isEmpty) ...[
                 const _Caption('자주 찾는 곳'),
                 ..._popularRows(),
@@ -165,20 +143,10 @@ class _PlacePickerState extends ConsumerState<PlacePicker> {
     ),
   );
 
-  List<Widget> _hereOptions() {
-    final error = _locateError;
+  // Pick the start on the map; device location is not connected
+  List<Widget> _mapOptions() {
     return [
       const SizedBox(height: 4),
-      _Inset(
-        child: ResultRow(
-          icon: ResultIcon.here,
-          title: _finding ? '위치 찾는 중…' : '현재 위치로',
-          sub: '가장 가까운 촬영 지점 · 실내에선 부정확할 수 있어요',
-          highlighted: error != null,
-          onTap: _finding ? null : _findMe,
-        ),
-      ),
-      if (error != null) _ErrorBox(message: error.message),
       _Inset(
         child: ResultRow(
           icon: ResultIcon.pin,

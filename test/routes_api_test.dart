@@ -17,6 +17,7 @@ import 'package:smap/features/navigation/data/api_route_repository.dart';
 import 'package:smap/features/navigation/data/dto/route_dto.dart';
 import 'package:smap/features/navigation/data/guide_voice.dart';
 import 'package:smap/features/navigation/data/mock_route_repository.dart';
+import 'package:smap/features/navigation/data/navigation_assets.dart';
 import 'package:smap/features/navigation/data/navigation_models.dart';
 import 'package:smap/features/navigation/data/route_graph.dart';
 import 'package:smap/features/navigation/data/route_plan.dart';
@@ -283,22 +284,23 @@ void main() {
   });
 
   group('경로 옵션', () {
-    test('검색 옵션이 먼저, 그다음 엘리베이터, 실내 순서로 하나만 보낸다', () {
+    test('검색 옵션이 먼저, 그다음 실내 길, 그다음 이동 방식으로 하나만 보낸다', () {
       expect(routeOptionOf(_entry()), RouteOption.outdoorFirst);
       expect(
-        routeOptionOf(_entry(indoor: true)),
-        RouteOption.indoorUndergroundFirst,
-      );
-      expect(
-        routeOptionOf(_entry(mode: RouteMode.comfortable, indoor: true)),
+        routeOptionOf(_entry(mode: RouteMode.comfortable)),
         RouteOption.comfortable,
       );
       expect(
-        routeOptionOf(_entry(indoor: true, option: RouteOption.shortest)),
+        routeOptionOf(_entry(mode: RouteMode.shortest)),
         RouteOption.shortest,
       );
       expect(
-        routeOptionOf(_entry(mode: RouteMode.shortest, indoor: true)),
+        routeOptionOf(_entry(mode: RouteMode.comfortable, indoor: true)),
+        RouteOption.indoorUndergroundFirst,
+        reason: 'the mode buttons hide while indoor is on',
+      );
+      expect(
+        routeOptionOf(_entry(indoor: true, option: RouteOption.shortest)),
         RouteOption.shortest,
       );
     });
@@ -319,6 +321,7 @@ void main() {
   group('길안내 상태', () {
     late _Routes routes;
     late _Voice voice;
+    late List<List<String>> prefetched;
 
     Future<ProviderContainer> start(
       NavigationEntry entry, {
@@ -326,10 +329,12 @@ void main() {
     }) async {
       routes = _Routes();
       voice = _Voice();
+      prefetched = [];
       final c = ProviderContainer(
         overrides: [
           launchQueryProvider.overrideWithValue(const {}),
           routeRepositoryProvider.overrideWithValue(routes),
+          photoPrefetchProvider.overrideWithValue(prefetched.add),
           guideVoiceProvider.overrideWithValue(voice),
           campusClosuresProvider.overrideWith((_) async => closures),
         ],
@@ -360,6 +365,22 @@ void main() {
       ).firstWhere((l) => l.primary);
       expect(arrow.to, 'new_door');
       expect(arrow.chip, isTrue, reason: 'no photo direction from the server');
+    });
+
+    test('경로를 받으면 다음 단계부터 도착까지 사진을 순서대로 미리 받는다', () async {
+      final entry = _entry();
+      final c = await start(entry);
+      expect(prefetched.single, [
+        NavigationAssets.pano('parking_3way'),
+        'https://cdn.test/new.jpg',
+        NavigationAssets.pano('road_yudam_3way'),
+      ]);
+
+      c.read(navigationProvider(entry).notifier).goTo('parking_3way');
+      expect(prefetched.last, [
+        'https://cdn.test/new.jpg',
+        NavigationAssets.pano('road_yudam_3way'),
+      ]);
     });
 
     test('길이 없으면 알리고, 모르는 지점이 섞이면 오류다', () async {

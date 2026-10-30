@@ -5,6 +5,7 @@ import '../../../home/presentation/widgets/pressable.dart';
 import '../../data/navigation_assets.dart';
 import '../../state/navigation_controller.dart';
 import '../navigation_tokens.dart';
+import 'marquee_text.dart';
 
 class StepCard extends StatelessWidget {
   const StepCard({
@@ -35,7 +36,6 @@ class StepCard extends StatelessWidget {
     final arrived = state.arrived;
     final next = state.next;
     final note = route.legAt(step)?.note;
-    final sub = route.to.sub;
 
     return Semantics(
       liveRegion: true,
@@ -44,9 +44,15 @@ class StepCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: NavColors.surface,
           borderRadius: BorderRadius.circular(NavLayout.cardRadius),
-          border: arrived ? Border.all(color: NavColors.blue, width: 3) : null,
           boxShadow: NavShadows.card,
         ),
+        // Drawn over the card so the arrival border does not change its size
+        foregroundDecoration: arrived
+            ? BoxDecoration(
+                borderRadius: BorderRadius.circular(NavLayout.cardRadius),
+                border: Border.all(color: NavColors.blue, width: 3),
+              )
+            : null,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           mainAxisSize: MainAxisSize.min,
@@ -122,27 +128,43 @@ class StepCard extends StatelessWidget {
                 ),
               ),
             ),
-            if (arrived) ...[
-              Text('${route.to.label}에 도착했어요', style: NavText.stepText),
-              if (sub != null) ...[
-                const SizedBox(height: 6),
-                Text(sub, style: NavText.stepNote),
-              ],
-              const SizedBox(height: 10),
-              _Rate(
-                praised: state.praised,
-                onPraise: onPraise,
-                onConfused: () => onReport(kind: 'issue'),
+            // Every line keeps one row's height so the card never resizes
+            SizedBox(
+              height: NavLayout.stepTextLine,
+              child: MarqueeText(
+                arrived ? '${route.to.label}에 도착했어요' : state.text,
+                style: NavText.stepText,
               ),
-            ] else ...[
-              Text(state.text, style: NavText.stepText),
-              if (note != null) ...[
-                const SizedBox(height: 6),
-                Text(note, style: NavText.stepNote),
-              ],
-              const SizedBox(height: 8),
-              const _Hint(),
-            ],
+            ),
+            const SizedBox(height: 6),
+            SizedBox(
+              height: NavLayout.stepNoteLine + 8 + NavLayout.stepHintLine,
+              child: arrived
+                  ? Align(
+                      alignment: Alignment.centerLeft,
+                      child: _Rate(
+                        praised: state.praised,
+                        onPraise: onPraise,
+                        onConfused: () => onReport(kind: 'issue'),
+                      ),
+                    )
+                  : Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        SizedBox(
+                          height: NavLayout.stepNoteLine,
+                          child: note == null
+                              ? null
+                              : MarqueeText(note, style: NavText.stepNote),
+                        ),
+                        const SizedBox(height: 8),
+                        const SizedBox(
+                          height: NavLayout.stepHintLine,
+                          child: _Hint(),
+                        ),
+                      ],
+                    ),
+            ),
             const SizedBox(height: 14),
             Row(
               children: [
@@ -236,6 +258,9 @@ class _Hint extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Text.rich(
+      maxLines: 1,
+      softWrap: false,
+      overflow: TextOverflow.ellipsis,
       TextSpan(
         text: '사진 속 ',
         children: [
@@ -277,16 +302,22 @@ class _Rate extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Wrap(
-      spacing: 6,
-      runSpacing: 6,
-      crossAxisAlignment: WrapCrossAlignment.center,
+    return Row(
       children: [
-        Text('안내가 정확했나요?', style: NavText.stepHint),
+        Flexible(
+          child: Text(
+            '안내가 정확했나요?',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: NavText.stepHint,
+          ),
+        ),
+        const SizedBox(width: 6),
         if (praised)
           Text('고마워요! 👍', style: NavText.rateDone)
         else ...[
           _RateChip(label: '👍 정확했어요', onTap: onPraise),
+          const SizedBox(width: 6),
           _RateChip(label: '헷갈렸어요', onTap: onConfused),
         ],
       ],

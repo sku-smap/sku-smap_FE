@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
 import '../../data/navigation_models.dart';
@@ -25,6 +27,8 @@ class FloorBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final top = floors.reversed.toList();
     final currentAt = top.indexWhere((f) => f.floor == current);
+    final shown = math.min(top.length, NavLayout.floorBarVisible);
+    final pitch = _button.height + _gap;
     return GlassBox(
       radius: 16,
       padding: const EdgeInsets.fromLTRB(5, 6, 5, 6),
@@ -40,25 +44,29 @@ class FloorBar extends StatelessWidget {
               style: NavText.floorBarName,
             ),
             const SizedBox(height: 4),
+            // At most five floors show; the rest scroll, current one centered
             Flexible(
-              child: SingleChildScrollView(
-                // Keep the current floor in view
-                controller: ScrollController(
-                  initialScrollOffset: currentAt <= 0
-                      ? 0
-                      : (currentAt - 3) * (_button.height + _gap),
-                ),
-                child: Column(
-                  children: [
-                    for (final (i, f) in top.indexed) ...[
-                      if (i > 0) const SizedBox(height: _gap),
-                      _FloorButton(
-                        stop: f,
-                        current: f.floor == current,
-                        onTap: () => onFloor(f.node),
-                      ),
+              child: SizedBox(
+                height: shown * pitch - _gap,
+                child: SingleChildScrollView(
+                  controller: ScrollController(
+                    initialScrollOffset: math.max(
+                      0,
+                      (currentAt - NavLayout.floorBarVisible ~/ 2) * pitch,
+                    ),
+                  ),
+                  child: Column(
+                    children: [
+                      for (final (i, f) in top.indexed) ...[
+                        if (i > 0) const SizedBox(height: _gap),
+                        _FloorButton(
+                          stop: f,
+                          current: f.floor == current,
+                          onTap: () => onFloor(f.node),
+                        ),
+                      ],
                     ],
-                  ],
+                  ),
                 ),
               ),
             ),

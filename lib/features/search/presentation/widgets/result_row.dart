@@ -5,7 +5,7 @@ import '../../../home/presentation/widgets/pressable.dart';
 import '../../data/search_assets.dart';
 import '../search_tokens.dart';
 
-enum ResultIcon { pin, here, spot }
+enum ResultIcon { pin, spot }
 
 class ResultRow extends StatelessWidget {
   const ResultRow({
@@ -74,13 +74,12 @@ class _Icon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final here = icon == ResultIcon.here;
     return Container(
       width: SearchLayout.resultIcon,
       height: SearchLayout.resultIcon,
       alignment: Alignment.center,
       decoration: BoxDecoration(
-        color: here ? SearchColors.blue : SearchColors.blueSoft,
+        color: SearchColors.blueSoft,
         borderRadius: BorderRadius.circular(SearchLayout.resultIconRadius),
       ),
       child: SvgPicture.asset(

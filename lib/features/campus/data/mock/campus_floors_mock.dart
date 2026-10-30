@@ -1273,7 +1273,7 @@ const panoMarks = <String, List<PanoMark>>{
     PanoMark(yaw: 315, pitch: 9, title: '북악관', desc: '', label: true),
     PanoMark(yaw: 122, pitch: 27, title: '본관', desc: '', label: true),
     PanoMark(yaw: 90, pitch: 21, title: '흡연부스', desc: '', label: true),
-    PanoMark(yaw: 207, pitch: 1, title: '이름 입력', desc: '', label: true),
+    PanoMark(yaw: 207, pitch: 1, title: '유담관', desc: '', label: true),
   ],
   'field': [
     PanoMark(yaw: 322, pitch: 16, title: '대일관', desc: '', label: true),
@@ -1304,9 +1304,5 @@ const panoMarks = <String, List<PanoMark>>{
     PanoMark(yaw: 51, pitch: 16, title: '북악관', desc: '', label: true),
     PanoMark(yaw: 94, pitch: 31, title: '문예관', desc: '', label: true),
     PanoMark(yaw: 112, pitch: 1, title: '2115 버스정류장', desc: '', label: true),
-    PanoMark(yaw: 342, pitch: -5, title: '이름 입력', desc: '', label: true),
-  ],
-  'hill_moonye_stair2': [
-    PanoMark(yaw: 37, pitch: 20, title: '이름 입력', desc: '', label: true),
   ],
 };
