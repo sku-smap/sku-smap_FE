@@ -14,7 +14,6 @@ import 'floor_sheet.dart';
 import 'link_arrow.dart';
 import 'mini_map.dart';
 import 'pano_view.dart';
-import 'room_overlay.dart';
 import 'viewer_top_bar.dart';
 
 // Arrows for every link here; the next step's arrow glows
@@ -91,7 +90,6 @@ class ViewerStage extends StatelessWidget {
     final rooms = floor == null
         ? const <FloorRoom>[]
         : roomsOn(here.building, floor);
-    final showRooms = rooms.isNotEmpty && (here.roomList ?? here.center);
     final width = MediaQuery.sizeOf(context).width;
     final height = MediaQuery.sizeOf(context).height;
     final card = bottom;
@@ -142,25 +140,6 @@ class ViewerStage extends StatelessWidget {
               route: route,
               showMap: showMap,
               onFloorSheet: openFloorSheet,
-            ),
-          ),
-        if (showRooms && floor != null)
-          Positioned(
-            top: top + NavLayout.roomListTop,
-            right: NavLayout.edge,
-            width: math.min(width * NavLayout.mapWidth, 196),
-            child: ConstrainedBox(
-              constraints: BoxConstraints(
-                maxHeight: math.max(
-                  80,
-                  height - top - NavLayout.roomListTop - 210,
-                ),
-              ),
-              child: RoomOverlay(
-                key: ValueKey('${here.building}|$floor'),
-                floor: floor,
-                rooms: rooms,
-              ),
             ),
           ),
         if (floors.length > 1)

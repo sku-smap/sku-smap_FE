@@ -25,9 +25,15 @@ class VoiceOutcome {
     this.origin,
     this.routeOption,
     this.reply,
+    this.namesOrigin = false,
+    this.namesPlace = true,
   });
 
   final SearchCandidate? place;
+
+  // Ends the sentence spoke of; only those may change
+  final bool namesOrigin;
+  final bool namesPlace;
   final SearchCandidate? origin;
   final RouteOption? routeOption;
   final String? reply;
@@ -36,6 +42,7 @@ class VoiceOutcome {
 class VoiceState {
   const VoiceState({
     this.listening = false,
+    this.preparing = false,
     this.busy,
     this.heard,
     this.searchId,
@@ -46,6 +53,9 @@ class VoiceState {
   });
 
   final bool listening;
+
+  // The mic is opening; speech before it is ready would be cut off
+  final bool preparing;
   final VoiceBusy? busy;
   final String? heard;
   final int? searchId;
@@ -56,7 +66,9 @@ class VoiceState {
 
   String get hint =>
       busy?.label ??
-      (listening
+      (preparing
+          ? '마이크 준비 중… 잠시 후 말해 주세요'
+          : listening
           ? '듣고 있어요… 다 말하면 버튼을 누르세요'
           : heard != null
           ? '이렇게 들었어요'
@@ -69,6 +81,9 @@ class VoiceController extends Notifier<VoiceState> {
 
   static const micDenied = '마이크를 쓸 수 없어요. 설정에서 허용하거나 아래 문장을 눌러 보세요.';
 
+  // Same as the search limit sent to the server
+  static const maxCandidates = 5;
+
   final SearchTarget target;
   Timer? _autoStop;
   var _run = 0;
@@ -76,6 +91,7 @@ class VoiceController extends Notifier<VoiceState> {
   String? _lastHeard;
   RouteOption? _routeOption;
   SearchCandidate? _origin;
+  var _namesOrigin = false;
 
   VoiceRecorder get _recorder => ref.read(voiceRecorderProvider);
 
@@ -91,20 +107,22 @@ class VoiceController extends Notifier<VoiceState> {
       recorder.cancel();
     });
     Future.microtask(start);
-    return const VoiceState(listening: true);
+    return const VoiceState(preparing: true);
   }
 
   // Start recording; stops by itself after 8 seconds
   Future<void> start() async {
     final run = ++_run;
     _autoStop?.cancel();
-    state = const VoiceState(listening: true);
+    state = const VoiceState(preparing: true);
     final allowed = await _recorder.start();
     if (run != _run) return;
     if (!allowed) {
       state = const VoiceState(error: micDenied);
       return;
     }
+    // Say "listening" only once audio is actually being captured
+    state = const VoiceState(listening: true);
     _autoStop = Timer(VoiceRecorder.maxListen, stop);
   }
 
@@ -174,6 +192,7 @@ class VoiceController extends Notifier<VoiceState> {
       final said = r.transcript ?? heard;
       _routeOption = r.routeOption;
       _origin = r.origin;
+      _namesOrigin = r.namesOrigin;
       // No destination found: settle now so the screen can clear it
       if (_destination && r.candidates.isEmpty) {
         state = VoiceState(
@@ -182,6 +201,8 @@ class VoiceController extends Notifier<VoiceState> {
             place: null,
             origin: r.origin,
             routeOption: r.routeOption,
+            namesOrigin: r.namesOrigin,
+            namesPlace: r.namesDestination,
           ),
         );
         return;
@@ -192,7 +213,8 @@ class VoiceController extends Notifier<VoiceState> {
         // The route search's message also asks for the start, so the
         // destination chips keep their own caption
         message: _destination ? null : r.message,
-        candidates: r.candidates,
+        // Show only what was asked for even if more come back
+        candidates: r.candidates.take(maxCandidates).toList(),
       );
       // One candidate is settled at once; several are offered as chips
       if (r.candidates.length == 1) {
@@ -202,6 +224,7 @@ class VoiceController extends Notifier<VoiceState> {
             origin: r.origin,
             routeOption: r.routeOption,
             reply: r.message,
+            namesOrigin: r.namesOrigin,
           ),
         );
       }
@@ -212,7 +235,12 @@ class VoiceController extends Notifier<VoiceState> {
   }
 
   Future<void> choose(SearchCandidate place) async => _settle(
-    VoiceOutcome(place: place, origin: _origin, routeOption: _routeOption),
+    VoiceOutcome(
+      place: place,
+      origin: _origin,
+      routeOption: _routeOption,
+      namesOrigin: _namesOrigin,
+    ),
   );
 
   // Hand the pick over at once; the server keeps the selection only as a

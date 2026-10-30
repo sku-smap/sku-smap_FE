@@ -110,12 +110,17 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
         if (place != null) chooseFrom(place);
         return;
       }
-      // A route sentence replaces both ends and says what it could not find
-      final from = origin == null ? null : placeOfCandidate(origin);
-      trip.setEnds(from: from, to: place);
+      // Only the ends the sentence named change; one it named but could not
+      // find is cleared, one it never named keeps its value (NFC start too)
+      final now = ref.read(tripProvider);
+      final from = outcome.namesOrigin
+          ? (origin == null ? null : placeOfCandidate(origin))
+          : now.from;
+      final to = outcome.namesPlace ? place : now.to;
+      trip.setEnds(from: from, to: to);
       ref
           .read(homeNoticeProvider.notifier)
-          .show(routeSearchNotice(from: from != null, to: place != null));
+          .show(routeSearchNotice(from: from != null, to: to != null));
       toRouteCard();
     }
 

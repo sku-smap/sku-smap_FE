@@ -12,21 +12,35 @@ class RecordVoiceRecorder implements VoiceRecorder {
   final _recorder = AudioRecorder();
   final _bytes = BytesBuilder(copy: false);
   StreamSubscription<Uint8List>? _sub;
+  Completer<void>? _done;
   DateTime? _startedAt;
+
+  // Wait this long for the last audio chunk after stopping
+  static const _flush = Duration(milliseconds: 400);
 
   @override
   Future<bool> start() async {
     if (!await _recorder.hasPermission()) return false;
     await cancel();
     final stream = await _recorder.startStream(
+      // Quiet or noisy campus speech comes through clearer for speech-to-text
       const RecordConfig(
         encoder: AudioEncoder.pcm16bits,
         sampleRate: _rate,
         numChannels: 1,
+        autoGain: true,
+        echoCancel: true,
+        noiseSuppress: true,
       ),
     );
     _startedAt = DateTime.now();
-    _sub = stream.listen(_bytes.add);
+    final done = _done = Completer<void>();
+    _sub = stream.listen(
+      _bytes.add,
+      onDone: () {
+        if (!done.isCompleted) done.complete();
+      },
+    );
     return true;
   }
 
@@ -34,6 +48,9 @@ class RecordVoiceRecorder implements VoiceRecorder {
   Future<VoiceClip?> stop() async {
     final started = _startedAt;
     await _recorder.stop();
+    // The stream may still deliver the last words after stop returns
+    await _done?.future.timeout(_flush, onTimeout: () {});
+    _done = null;
     await _sub?.cancel();
     _sub = null;
     _startedAt = null;

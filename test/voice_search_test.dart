@@ -44,6 +44,17 @@ class _Recorder implements VoiceRecorder {
   Future<void> dispose() async {}
 }
 
+// Opens the mic only when the test says so
+class _SlowRecorder extends _Recorder {
+  final ready = Completer<bool>();
+
+  @override
+  Future<bool> start() {
+    starts++;
+    return ready.future;
+  }
+}
+
 // Each request waits until the test answers it
 class _Repo implements SearchRepository {
   final pending = <Completer<SearchResult>>[];
@@ -315,6 +326,54 @@ void main() {
     await voice().choose(read().candidates!.last);
     expect(read().result!.place!.name, '학생회관');
     expect(read().result!.origin?.name, '유담관');
+  });
+
+  testWidgets('서버가 후보를 많이 줘도 요청한 개수까지만 보여준다', (tester) async {
+    setUpWith(_Recorder());
+    await tester.pump();
+
+    unawaited(voice().handle('북악관'));
+    await tester.pump();
+    repo.pending.single.complete(
+      _result([for (var i = 0; i < 23; i++) _c('p$i', '후보 $i')]),
+    );
+    await tester.pump();
+    expect(read().candidates, hasLength(VoiceController.maxCandidates));
+  });
+
+  testWidgets('말한 쪽 정보가 고른 결과까지 이어진다', (tester) async {
+    setUpWith(_Recorder());
+    await tester.pump();
+
+    unawaited(voice().handle('유담관에서 학생'));
+    await tester.pump();
+    repo.pending.single.complete(
+      SearchResult(
+        target: SearchTarget.destination,
+        namesOrigin: true,
+        candidates: [_c('a', '학생식당'), _c('b', '학생회관')],
+      ),
+    );
+    await tester.pump();
+    await voice().choose(read().candidates!.first);
+    expect(read().result!.namesOrigin, isTrue);
+    expect(read().result!.origin, isNull, reason: 'named but not found');
+  });
+
+  testWidgets('마이크가 열리기 전에는 듣고 있다고 하지 않는다', (tester) async {
+    final recorder = _SlowRecorder();
+    setUpWith(recorder);
+    await tester.pump();
+    expect(read().preparing, isTrue);
+    expect(read().listening, isFalse);
+    expect(read().hint, startsWith('마이크 준비 중'));
+
+    recorder.ready.complete(true);
+    await tester.pump();
+    expect(read().preparing, isFalse);
+    expect(read().listening, isTrue);
+    expect(read().hint, startsWith('듣고 있어요'));
+    c.dispose();
   });
 
   group('후보 확정', () {

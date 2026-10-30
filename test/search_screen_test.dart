@@ -216,11 +216,13 @@ void main() {
     final container = await _pumpSearch(tester, '/search?mode=voice');
 
     expect(find.text('듣고 있어요… 다 말하면 버튼을 누르세요'), findsOneWidget);
-    await _tap(tester, find.text('유담관이 어디에요?').last);
+    // Only the example button says it; the big placeholder is gone
+    expect(find.text('유담관이 어디에요?'), findsOneWidget);
+    await _tap(tester, find.text('계단 말고 혜인관 가는 길'));
     expect(find.text('찾는 중…'), findsOneWidget);
     await _wait(tester, 700);
 
-    expect(container.read(tripProvider).to?.id, 'b-yudam');
+    expect(container.read(tripProvider).to?.id, 'b-hyein');
     expect(container.read(tripProvider).from, isNull);
     expect(find.text('home'), findsOneWidget);
     expect(
@@ -287,9 +289,9 @@ void main() {
   testWidgets('출발지 고르기에서 음성으로 고르면 출발지로 정한다', (tester) async {
     final container = await _pumpSearch(tester, '/search?pick=from&mode=voice');
 
-    await _tap(tester, find.text('유담관이 어디에요?'));
+    await _tap(tester, find.text('계단 말고 혜인관 가는 길'));
     await _wait(tester, 700);
-    expect(container.read(tripProvider).from?.id, 'b-yudam');
+    expect(container.read(tripProvider).from?.id, 'b-hyein');
     expect(container.read(tripProvider).to, isNull);
     expect(find.text('home'), findsOneWidget);
   });
@@ -305,7 +307,7 @@ void main() {
         .read(tripProvider.notifier)
         .setFrom(const CampusPlace(id: 'f-bus', name: '버스정류장'));
 
-    await _tap(tester, find.text('유담관이 어디에요?'));
+    await _tap(tester, find.text('북악관에서 문예관 가는 길'));
     await _tap(tester, find.text('문예관'));
     await _wait(tester, 300);
     expect(_pushed(tester), isNull);
@@ -316,7 +318,7 @@ void main() {
   testWidgets('검색이 실패하면 오류와 다시 시도를 보여준다', (tester) async {
     await _pumpSearch(tester, '/search?mode=voice', repo: _FailingRepo());
 
-    await _tap(tester, find.text('유담관이 어디에요?'));
+    await _tap(tester, find.text('북악관에서 문예관 가는 길'));
     expect(find.text('인터넷 연결을 확인해 주세요.'), findsOneWidget);
     expect(find.text('다시 시도'), findsOneWidget);
   });
@@ -328,7 +330,7 @@ void main() {
       repo: _OriginOnlyRepo(),
     );
 
-    await _tap(tester, find.text('유담관이 어디에요?'));
+    await _tap(tester, find.text('북악관에서 문예관 가는 길'));
     await _wait(tester, 300);
     expect(container.read(tripProvider).from?.id, 'b-yudam');
     expect(container.read(tripProvider).to, isNull);
@@ -339,7 +341,7 @@ void main() {
     );
   });
 
-  testWidgets('출발·도착을 정해 둔 뒤 다시 말하면 이전 값이 남지 않는다', (tester) async {
+  testWidgets('출발지만 다시 말하면 출발지만 바꾸고 도착지는 그대로 둔다', (tester) async {
     final container = await _pumpSearch(
       tester,
       '/search?mode=voice',
@@ -349,10 +351,45 @@ void main() {
       ..setFrom(const CampusPlace(id: 'f-gate', name: '정문'))
       ..setTo(const CampusPlace(id: 'b-bonkwan', name: '본관'));
 
-    await _tap(tester, find.text('유담관이 어디에요?'));
+    await _tap(tester, find.text('북악관에서 문예관 가는 길'));
     await _wait(tester, 300);
     expect(container.read(tripProvider).from?.id, 'b-yudam');
-    expect(container.read(tripProvider).to, isNull, reason: 'old 본관 is gone');
+    expect(container.read(tripProvider).to?.id, 'b-bonkwan');
+    expect(container.read(homeNoticeProvider)?.text, '경로 설정이 완료되었습니다.');
+  });
+
+  testWidgets('NFC 출발지가 있을 때 도착지만 말하면 NFC 출발지를 지우지 않는다', (tester) async {
+    final container = await _pumpSearch(
+      tester,
+      '/search?mode=voice&src=nfc&from=bus_stop',
+    );
+    expect(container.read(tripProvider).from?.id, 'bus_stop');
+
+    await _tap(tester, find.text('계단 말고 혜인관 가는 길'));
+    await _wait(tester, 700);
+    expect(container.read(tripProvider).from?.id, 'bus_stop');
+    expect(container.read(tripProvider).to?.id, 'b-hyein');
+    expect(container.read(homeNoticeProvider)?.text, '경로 설정이 완료되었습니다.');
+  });
+
+  testWidgets('둘 다 정해 둔 뒤 둘 다 말했는데 도착지를 못 찾으면 도착지만 비운다', (tester) async {
+    final container = await _pumpSearch(
+      tester,
+      '/search?mode=voice',
+      repo: _DestinationMissedRepo(),
+    );
+    container.read(tripProvider.notifier)
+      ..setFrom(const CampusPlace(id: 'f-gate', name: '정문'))
+      ..setTo(const CampusPlace(id: 'b-bonkwan', name: '본관'));
+
+    await _tap(tester, find.text('북악관에서 문예관 가는 길'));
+    await _wait(tester, 300);
+    expect(container.read(tripProvider).from?.id, 'b-yudam');
+    expect(container.read(tripProvider).to, isNull);
+    expect(
+      container.read(homeNoticeProvider)?.text,
+      '도착지를 인식하지 못했습니다. 도착지를 입력해주세요.',
+    );
   });
 
   testWidgets('둘 다 찾으면 경로 설정 완료를 알린다', (tester) async {
@@ -370,7 +407,7 @@ void main() {
       repo: _RouteChipsRepo(),
     );
 
-    await _tap(tester, find.text('유담관이 어디에요?'));
+    await _tap(tester, find.text('북악관에서 문예관 가는 길'));
     await _wait(tester, 300);
     expect(find.text('혹시 이곳인가요?'), findsOneWidget);
     expect(find.text('체육시설 (401호)'), findsOneWidget);
@@ -467,6 +504,25 @@ class _OriginOnlyRepo extends _FailingRepo {
       const SearchResult(
         target: SearchTarget.destination,
         message: '어디로 갈지 알려 주세요.',
+        namesOrigin: true,
+        namesDestination: false,
+        origin: SearchCandidate(
+          id: 'place:b-yudam',
+          type: CandidateType.place,
+          nodeId: 'yudam_9f',
+          name: '유담관',
+          placeId: 'b-yudam',
+        ),
+      );
+}
+
+// Both ends named, but nothing matched the destination
+class _DestinationMissedRepo extends _FailingRepo {
+  @override
+  Future<SearchResult> searchRouteText(String query) async =>
+      const SearchResult(
+        target: SearchTarget.destination,
+        namesOrigin: true,
         origin: SearchCandidate(
           id: 'place:b-yudam',
           type: CandidateType.place,
@@ -484,6 +540,7 @@ class _RouteChipsRepo extends _FailingRepo {
       const SearchResult(
         target: SearchTarget.destination,
         searchId: 9,
+        namesOrigin: true,
         origin: SearchCandidate(
           id: 'place:b-bukak',
           type: CandidateType.place,

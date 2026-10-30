@@ -312,7 +312,6 @@ const panoSpots = [
     x: 21,
     y: 17,
     level: MapLevel.underground,
-    roomList: false,
   ),
   PanoSpot(
     id: 'bukak_b1_cafeteria',
