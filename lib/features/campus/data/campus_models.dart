@@ -169,7 +169,6 @@ class PanoSpot {
     this.hidden = false,
     this.center = false,
     this.estimated = false,
-    this.roomList,
     this.imageUrl,
     this.thumbUrl,
   });
@@ -185,7 +184,6 @@ class PanoSpot {
   final bool hidden;
   final bool center;
   final bool estimated;
-  final bool? roomList;
   final String? imageUrl;
 
   // Small list photo; may be missing even when the full photo exists
@@ -210,7 +208,6 @@ class PanoSpot {
     hidden: hidden,
     center: center,
     estimated: estimated,
-    roomList: roomList,
     imageUrl: url,
     thumbUrl: thumb,
   );
@@ -229,7 +226,6 @@ class PanoSpot {
     hidden: hidden,
     center: center,
     estimated: estimated,
-    roomList: roomList,
     imageUrl: server.imageUrl ?? imageUrl,
     thumbUrl: server.imageUrl != null ? server.thumbUrl : thumbUrl,
   );

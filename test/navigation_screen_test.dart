@@ -225,6 +225,11 @@ void main() {
     await _pump(tester, '/navigation?from=b-bukak&to=r-bukak-954');
 
     expect(find.text('북악관 1F'), findsOneWidget);
+    expect(
+      find.text('접기'),
+      findsNothing,
+      reason: 'no room list over the photo',
+    );
     expect(find.bySemanticsLabel('B1로 이동'), findsOneWidget);
 
     await _tap(tester, find.bySemanticsLabel('1층 층 안내도 열기'));

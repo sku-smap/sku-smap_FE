@@ -37,8 +37,9 @@ abstract final class SearchDto {
     );
   }
 
-  // RouteSearchResponseDTO: destination candidates plus the top start; a
-  // sentence naming only the start has no destination candidates
+  // RouteSearchResponseDTO: destination candidates plus the top start. A
+  // null part means the sentence did not name that end; a part with no
+  // candidates means it named it but nothing matched
   static SearchResult routeResultFrom(Object? data) {
     final json = data! as Map<String, dynamic>;
     SearchResult? part(Object? raw, SearchTarget target) =>
@@ -53,6 +54,8 @@ abstract final class SearchDto {
       routeOption: to?.routeOption,
       candidates: to?.candidates ?? const [],
       origin: from?.candidates.firstOrNull,
+      namesOrigin: from != null,
+      namesDestination: to != null,
     );
   }
 

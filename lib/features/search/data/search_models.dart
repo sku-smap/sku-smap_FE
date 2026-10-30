@@ -45,6 +45,8 @@ class SearchResult {
     this.routeOption,
     this.candidates = const [],
     this.origin,
+    this.namesOrigin = false,
+    this.namesDestination = true,
   });
 
   final SearchTarget target;
@@ -56,6 +58,11 @@ class SearchResult {
 
   // Best start named in the same sentence (route search)
   final SearchCandidate? origin;
+
+  // Whether the sentence spoke of each end at all, found or not; an end it
+  // never named keeps the value already chosen
+  final bool namesOrigin;
+  final bool namesDestination;
 }
 
 class SearchTask {

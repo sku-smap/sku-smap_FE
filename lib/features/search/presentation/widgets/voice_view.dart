@@ -75,7 +75,7 @@ class VoiceView extends ConsumerWidget {
                         ),
                         const SizedBox(height: 14),
                         Text(
-                          state.heard ?? '“유담관이 어디에요?”',
+                          state.heard ?? '',
                           textAlign: TextAlign.center,
                           style: SearchText.voiceText,
                         ),
