@@ -146,14 +146,14 @@ class ViewerStage extends StatelessWidget {
           ),
         if (showRooms && floor != null)
           Positioned(
-            top: top + NavLayout.floorBarTop,
+            top: top + NavLayout.roomListTop,
             right: NavLayout.edge,
             width: math.min(width * NavLayout.mapWidth, 196),
             child: ConstrainedBox(
               constraints: BoxConstraints(
                 maxHeight: math.max(
                   80,
-                  height - top - NavLayout.floorBarTop - 210,
+                  height - top - NavLayout.roomListTop - 210,
                 ),
               ),
               child: RoomOverlay(
@@ -191,10 +191,18 @@ class ViewerStage extends StatelessWidget {
           ),
         if (card != null)
           Positioned(
-            left: NavLayout.cardInset,
-            right: NavLayout.cardInset,
+            left: 0,
+            right: 0,
             bottom: math.max(NavLayout.cardInset, padding.bottom),
-            child: card,
+            child: Center(
+              child: SizedBox(
+                width: math.min(
+                  NavLayout.cardWidth,
+                  width - NavLayout.cardInset * 2,
+                ),
+                child: card,
+              ),
+            ),
           ),
         ...overlays,
       ],

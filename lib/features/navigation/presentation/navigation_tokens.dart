@@ -63,11 +63,20 @@ abstract final class NavLayout {
   static const mapWidth = 0.46;
   static const mapMaxWidth = 200.0;
   static const mapAspect = 171.4 / 114.5;
-  static const floorBarTop = 250.0;
+  // Floor bar under the top bar (Figma y 77), room list below the mini map
+  static const floorBarTop = 65.0;
+  static const roomListTop = 250.0;
+  static const floorBarVisible = 5;
   static const editInset = 10.0;
-  static const chipBottom = 230.0;
+
+  // Move chips sit just above the fixed-height step card
+  static const chipBottom = 252.0;
 
   static const cardInset = 10.0;
+  static const cardWidth = 370.0;
+  static const stepTextLine = 28.4;
+  static const stepNoteLine = 20.3;
+  static const stepHintLine = 16.0;
   static const cardRadius = 22.0;
   static const buttonHeight = 48.0;
   static const buttonRadius = 14.0;

@@ -284,22 +284,23 @@ void main() {
   });
 
   group('경로 옵션', () {
-    test('검색 옵션이 먼저, 그다음 엘리베이터, 실내 순서로 하나만 보낸다', () {
+    test('검색 옵션이 먼저, 그다음 실내 길, 그다음 이동 방식으로 하나만 보낸다', () {
       expect(routeOptionOf(_entry()), RouteOption.outdoorFirst);
       expect(
-        routeOptionOf(_entry(indoor: true)),
-        RouteOption.indoorUndergroundFirst,
-      );
-      expect(
-        routeOptionOf(_entry(mode: RouteMode.comfortable, indoor: true)),
+        routeOptionOf(_entry(mode: RouteMode.comfortable)),
         RouteOption.comfortable,
       );
       expect(
-        routeOptionOf(_entry(indoor: true, option: RouteOption.shortest)),
+        routeOptionOf(_entry(mode: RouteMode.shortest)),
         RouteOption.shortest,
       );
       expect(
-        routeOptionOf(_entry(mode: RouteMode.shortest, indoor: true)),
+        routeOptionOf(_entry(mode: RouteMode.comfortable, indoor: true)),
+        RouteOption.indoorUndergroundFirst,
+        reason: 'the mode buttons hide while indoor is on',
+      );
+      expect(
+        routeOptionOf(_entry(indoor: true, option: RouteOption.shortest)),
         RouteOption.shortest,
       );
     });
