@@ -13,6 +13,12 @@ abstract interface class SearchRepository {
     required VoiceClip clip,
   });
 
+  // A sentence that may name both ends (POST /api/v1/route-searches); the
+  // candidates are the destination's and the best start rides along
+  Future<SearchResult> searchRouteText(String query);
+
+  Future<SearchResult> searchRouteVoice(VoiceClip clip);
+
   // Record which candidate of that search the user settled on
   Future<void> select({required int searchId, required String candidateId});
 }

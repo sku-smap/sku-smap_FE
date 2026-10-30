@@ -10,6 +10,7 @@ class ApiSearchRepository implements SearchRepository {
   const ApiSearchRepository(this._api);
 
   static const _path = '/api/v1/searches';
+  static const _routePath = '/api/v1/route-searches';
   static const _limit = 5;
   static const _uploadTimeout = Duration(seconds: 30);
 
@@ -47,6 +48,29 @@ class ApiSearchRepository implements SearchRepository {
     }),
     sendTimeout: _uploadTimeout,
     decode: (data) => SearchDto.resultFrom(data, target),
+  );
+
+  @override
+  Future<SearchResult> searchRouteText(String query) => _api.post(
+    _routePath,
+    body: {'query': query, 'limit': _limit},
+    decode: SearchDto.routeResultFrom,
+  );
+
+  @override
+  Future<SearchResult> searchRouteVoice(VoiceClip clip) => _api.postForm(
+    _routePath,
+    form: FormData.fromMap({
+      'durationMs': clip.duration.inMilliseconds,
+      'limit': _limit,
+      'audio': MultipartFile.fromBytes(
+        clip.bytes,
+        filename: 'voice.wav',
+        contentType: DioMediaType('audio', 'wav'),
+      ),
+    }),
+    sendTimeout: _uploadTimeout,
+    decode: SearchDto.routeResultFrom,
   );
 
   @override
