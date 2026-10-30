@@ -250,7 +250,7 @@ void main() {
       var o = adapter.requests.single;
       expect(o.method, 'POST');
       expect(o.uri.path, '/api/v1/route-searches');
-      expect(o.data, {'query': '유담관에서 북악관', 'limit': 5});
+      expect(o.data, {'query': '유담관에서 북악관', 'limit': 1});
 
       (:repo, :adapter) = _api(route);
       await repo.searchRouteVoice(
@@ -264,7 +264,7 @@ void main() {
       final form = o.data as FormData;
       expect(Map.fromEntries(form.fields), {
         'durationMs': '2000',
-        'limit': '5',
+        'limit': '1',
       });
       expect(form.files.single.value.filename, 'voice.wav');
     });

@@ -80,6 +80,12 @@ class TripController extends Notifier<TripState> {
     ref.read(recentPlacesProvider.notifier).add(place.id);
   }
 
+  // A sentence search replaces both ends; one it could not settle is cleared
+  void setEnds({CampusPlace? from, CampusPlace? to}) {
+    state = state.copyWith(from: () => from, to: () => to);
+    if (to != null) ref.read(recentPlacesProvider.notifier).add(to.id);
+  }
+
   void swap() =>
       state = state.copyWith(from: () => state.to, to: () => state.from);
 

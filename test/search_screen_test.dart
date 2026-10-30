@@ -9,6 +9,7 @@ import 'package:smap/core/network/app_exception.dart';
 import 'package:smap/core/router.dart';
 import 'package:smap/features/campus/data/campus_models.dart';
 import 'package:smap/features/campus/state/trip_controller.dart';
+import 'package:smap/features/home/state/home_notice.dart';
 import 'package:smap/features/search/data/mock_search_repository.dart';
 import 'package:smap/features/search/data/place_search.dart';
 import 'package:smap/features/search/data/search_models.dart';
@@ -220,7 +221,12 @@ void main() {
     await _wait(tester, 700);
 
     expect(container.read(tripProvider).to?.id, 'b-yudam');
-    expect(find.text('어디에서 출발하나요?'), findsOneWidget);
+    expect(container.read(tripProvider).from, isNull);
+    expect(find.text('home'), findsOneWidget);
+    expect(
+      container.read(homeNoticeProvider)?.text,
+      '출발지를 인식하지 못했습니다. 출발지를 입력해주세요.',
+    );
   });
 
   testWidgets('말을 멈추면 알아듣고 후보를 보여준다 (S-17~S-19)', (tester) async {
@@ -235,15 +241,15 @@ void main() {
     expect(find.text('혹시 이곳인가요?'), findsOneWidget);
   });
 
-  testWidgets('용무 질문은 답을 보여주고 출발지를 묻는다 (S-20·S-21)', (tester) async {
+  testWidgets('용무 질문은 그 부서를 도착지로 하고 출발지는 비운다 (S-20·S-21)', (tester) async {
     final container = await _pumpSearch(tester, '/search?mode=voice');
 
     await _tap(tester, find.text('졸업증명서 떼려면 어디로 가요?'));
     await _wait(tester, 700);
 
     expect(container.read(tripProvider).to?.name, '교무처');
-    expect(find.textContaining('증명서 발급은 교무처'), findsOneWidget);
-    expect(find.text('어디에서 출발하나요?'), findsOneWidget);
+    expect(container.read(tripProvider).from, isNull);
+    expect(find.text('home'), findsOneWidget);
   });
 
   testWidgets('문장에 출발지가 있으면 둘 다 채우고 홈 경로 카드로 돌아간다 (S-22)', (tester) async {
@@ -315,7 +321,7 @@ void main() {
     expect(find.text('다시 시도'), findsOneWidget);
   });
 
-  testWidgets('출발지만 말하면 출발지를 넣고 도착지 고르기로 넘어간다', (tester) async {
+  testWidgets('출발지만 말하면 출발지만 넣고 도착지는 비운 채 홈으로 간다', (tester) async {
     final container = await _pumpSearch(
       tester,
       '/search?mode=voice',
@@ -326,8 +332,35 @@ void main() {
     await _wait(tester, 300);
     expect(container.read(tripProvider).from?.id, 'b-yudam');
     expect(container.read(tripProvider).to, isNull);
-    expect(find.text('어디로 갈까요?'), findsOneWidget);
-    await _wait(tester, 3600);
+    expect(find.text('home'), findsOneWidget);
+    expect(
+      container.read(homeNoticeProvider)?.text,
+      '도착지를 인식하지 못했습니다. 도착지를 입력해주세요.',
+    );
+  });
+
+  testWidgets('출발·도착을 정해 둔 뒤 다시 말하면 이전 값이 남지 않는다', (tester) async {
+    final container = await _pumpSearch(
+      tester,
+      '/search?mode=voice',
+      repo: _OriginOnlyRepo(),
+    );
+    container.read(tripProvider.notifier)
+      ..setFrom(const CampusPlace(id: 'f-gate', name: '정문'))
+      ..setTo(const CampusPlace(id: 'b-bonkwan', name: '본관'));
+
+    await _tap(tester, find.text('유담관이 어디에요?'));
+    await _wait(tester, 300);
+    expect(container.read(tripProvider).from?.id, 'b-yudam');
+    expect(container.read(tripProvider).to, isNull, reason: 'old 본관 is gone');
+  });
+
+  testWidgets('둘 다 찾으면 경로 설정 완료를 알린다', (tester) async {
+    final container = await _pumpSearch(tester, '/search?mode=voice');
+
+    await _tap(tester, find.text('북악관에서 문예관 가는 길'));
+    await _wait(tester, 700);
+    expect(container.read(homeNoticeProvider)?.text, '경로 설정이 완료되었습니다.');
   });
 }
 
