@@ -174,27 +174,24 @@ class VoiceController extends Notifier<VoiceState> {
       final said = r.transcript ?? heard;
       _routeOption = r.routeOption;
       _origin = r.origin;
-      // The route search sends at most one candidate per end; settle now
-      // even when an end was not found, so the screen can clear it
-      if (_destination && r.candidates.length <= 1) {
-        final place = r.candidates.firstOrNull;
+      // No destination found: settle now so the screen can clear it
+      if (_destination && r.candidates.isEmpty) {
         state = VoiceState(
           heard: said,
-          searchId: r.searchId,
           result: VoiceOutcome(
-            place: place,
+            place: null,
             origin: r.origin,
             routeOption: r.routeOption,
-            reply: r.message,
           ),
         );
-        _record(r.searchId, place);
         return;
       }
       state = VoiceState(
         heard: said,
         searchId: r.searchId,
-        message: r.message,
+        // The route search's message also asks for the start, so the
+        // destination chips keep their own caption
+        message: _destination ? null : r.message,
         candidates: r.candidates,
       );
       // One candidate is settled at once; several are offered as chips
