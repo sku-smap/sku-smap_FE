@@ -209,6 +209,27 @@ void main() {
     });
   });
 
+  test('말하지 않은 쪽(null)과 말했지만 못 찾은 쪽(빈 후보)을 구분한다', () {
+    final missed = SearchDto.routeResultFrom({
+      'mode': 'DESTINATION_ONLY',
+      'origin': {
+        ..._response(status: 'NOT_FOUND', candidates: []),
+        'target': 'ORIGIN',
+      },
+      'destination': _response(),
+    });
+    expect(missed.namesOrigin, isTrue);
+    expect(missed.origin, isNull);
+    expect(missed.namesDestination, isTrue);
+
+    final notSaid = SearchDto.routeResultFrom({
+      'mode': 'DESTINATION_ONLY',
+      'origin': null,
+      'destination': _response(),
+    });
+    expect(notSaid.namesOrigin, isFalse);
+  });
+
   group('검색 API 요청', () {
     test('텍스트는 JSON으로 대상·문장·개수를 보낸다', () async {
       final (:repo, :adapter) = _api(_response());

@@ -59,6 +59,8 @@ class MockSearchRepository implements SearchRepository {
         for (final p in to != null ? [to] : intent.candidates) _candidate(p),
       ],
       origin: intent.from == null ? null : _candidate(intent.from!),
+      namesOrigin: intent.from != null,
+      namesDestination: to != null || intent.candidates.isNotEmpty,
     );
   }
 
