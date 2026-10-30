@@ -4,10 +4,7 @@ import '../../../core/network/app_config.dart';
 import '../../../core/network/data_source.dart';
 import '../../../core/network/dio_provider.dart';
 import '../../../core/state/toast_host.dart';
-import '../../campus/state/launch_provider.dart';
 import '../data/api_search_repository.dart';
-import '../data/location_service.dart';
-import '../data/mock_location.dart';
 import '../data/mock_search_repository.dart';
 import '../data/record_voice_recorder.dart';
 import '../data/search_models.dart';
@@ -68,10 +65,6 @@ final searchFlowProvider = NotifierProvider.autoDispose
     .family<SearchFlowController, SearchFlowState, SearchEntry>(
       SearchFlowController.new,
     );
-
-final locatorProvider = Provider<LocationService>(
-  (ref) => MockLocator(onCampus: ref.watch(launchEntryProvider).onCampus),
-);
 
 final searchRepositoryProvider = Provider<SearchRepository>(
   (ref) => selectDataSource(
