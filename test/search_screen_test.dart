@@ -362,6 +362,27 @@ void main() {
     await _wait(tester, 700);
     expect(container.read(homeNoticeProvider)?.text, '경로 설정이 완료되었습니다.');
   });
+
+  testWidgets('도착지 후보가 여럿이면 칩으로 고른 뒤 경로 설정 완료를 알린다', (tester) async {
+    final container = await _pumpSearch(
+      tester,
+      '/search?mode=voice',
+      repo: _RouteChipsRepo(),
+    );
+
+    await _tap(tester, find.text('유담관이 어디에요?'));
+    await _wait(tester, 300);
+    expect(find.text('혹시 이곳인가요?'), findsOneWidget);
+    expect(find.text('체육시설 (401호)'), findsOneWidget);
+    expect(container.read(homeNoticeProvider), isNull, reason: 'not yet');
+
+    await _tap(tester, find.text('체육시설 (401호)'));
+    await _wait(tester, 300);
+    expect(container.read(tripProvider).from?.id, 'b-bukak');
+    expect(container.read(tripProvider).to?.id, 'r-yudam-401');
+    expect(find.text('home'), findsOneWidget);
+    expect(container.read(homeNoticeProvider)?.text, '경로 설정이 완료되었습니다.');
+  });
 }
 
 class _SlowSelectRepo implements SearchRepository {
@@ -453,5 +474,38 @@ class _OriginOnlyRepo extends _FailingRepo {
           name: '유담관',
           placeId: 'b-yudam',
         ),
+      );
+}
+
+// Start found and several destinations to choose from
+class _RouteChipsRepo extends _FailingRepo {
+  @override
+  Future<SearchResult> searchRouteText(String query) async =>
+      const SearchResult(
+        target: SearchTarget.destination,
+        searchId: 9,
+        origin: SearchCandidate(
+          id: 'place:b-bukak',
+          type: CandidateType.place,
+          nodeId: 'bukak_1f_main_in',
+          name: '북악관',
+          placeId: 'b-bukak',
+        ),
+        candidates: [
+          SearchCandidate(
+            id: 'place:b-yudam',
+            type: CandidateType.place,
+            nodeId: 'yudam_9f',
+            name: '유담관',
+            placeId: 'b-yudam',
+          ),
+          SearchCandidate(
+            id: 'place:r-yudam-401',
+            type: CandidateType.place,
+            nodeId: 'yudam_9f',
+            name: '체육시설 (401호)',
+            placeId: 'r-yudam-401',
+          ),
+        ],
       );
 }

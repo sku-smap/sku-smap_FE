@@ -148,7 +148,7 @@ void main() {
     await tester.pump();
 
     expect(read().heard, '학생 어디야');
-    expect(read().message, '어디로 가실지 골라 주세요.');
+    expect(read().message, isNull);
     expect(read().candidates, hasLength(2));
     expect(read().result, isNull);
 
@@ -290,6 +290,31 @@ void main() {
       repo.pending.single.complete(_result([]));
       await tester.pump();
     });
+  });
+
+  testWidgets('도착지 후보가 여럿이면 자체 안내 문구로 칩을 보여주고 고르면 출발지와 함께 넘긴다', (tester) async {
+    setUpWith(_Recorder());
+    await tester.pump();
+
+    unawaited(voice().handle('유담관에서 학생 쪽'));
+    await tester.pump();
+    repo.pending.single.complete(
+      SearchResult(
+        target: SearchTarget.destination,
+        searchId: 7,
+        message: '출발지와 목적지를 골라 주세요.',
+        origin: _c('b-yudam', '유담관'),
+        candidates: [_c('a', '학생식당'), _c('b', '학생회관')],
+      ),
+    );
+    await tester.pump();
+    expect(read().result, isNull);
+    expect(read().candidates, hasLength(2));
+    expect(read().message, isNull, reason: 'server text asks for the start');
+
+    await voice().choose(read().candidates!.last);
+    expect(read().result!.place!.name, '학생회관');
+    expect(read().result!.origin?.name, '유담관');
   });
 
   group('후보 확정', () {
