@@ -16,6 +16,7 @@ import '../widgets/facility_sheet.dart';
 import '../widgets/home_hero.dart';
 import '../widgets/home_sheet.dart';
 import '../widgets/home_tab_bar.dart';
+import '../widgets/home_toast.dart';
 import '../widgets/nfc_notice.dart';
 import '../widgets/quick_chips.dart';
 import '../widgets/route_card.dart';
@@ -148,6 +149,7 @@ class HomeScreen extends ConsumerWidget {
           ),
           const ReportAppliedNotice(),
           const NfcNotice(),
+          const HomeToast(),
         ],
       ),
     );
